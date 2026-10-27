@@ -79,11 +79,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .kpi .lbl{font-size:.8rem;font-weight:700;color:var(--band-muted)}
 .kpi .val{font-size:1.25rem;font-weight:800;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi .sub{font-size:.8rem;color:var(--band-muted);margin-top:1px;line-height:1.35}
-.kpi .sub b{color:var(--band-ink);font-weight:800}
+.kpi .sub b{color:var(--band-ink);font-weight:800;white-space:nowrap}
 .kpi.debt .val{font-size:1.55rem}
+.kpi-btn{cursor:pointer}.kpi-btn:hover{filter:brightness(1.05)}.kpi-btn:focus-visible{outline:2px solid var(--band-ink);outline-offset:2px}
 .kpi .val.hot{color:var(--band-hot)}
 .period{display:flex;gap:8px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;padding:4px 12px;border-radius:999px;background:rgb(0 0 0 / .14);color:var(--band-muted)}
+svg.ed{width:.95em;height:.95em;vertical-align:-.12em;margin-left:3px;opacity:.85;flex:none}
 .chip-btn{border:0;font:inherit;cursor:pointer}
 .chip-btn:hover{background:rgb(0 0 0 / .22)}
 .chip b{color:var(--band-ink);font-weight:700}
@@ -355,14 +357,14 @@ main .wrap>*,.chart-box{min-width:0}
         <h1 class="brand">Finanzee</h1>
         <p class="today" id="today"></p>
       </div>
-      <button class="salary-btn" id="settingsBtn" type="button" aria-label="Maaş bilgilerini düzenle">Maaş <span class="num" id="salaryLbl">—</span> ✎</button>
+      <button class="salary-btn" id="settingsBtn" type="button" aria-label="Maaş bilgilerini düzenle">Maaş <span class="num" id="salaryLbl">—</span> <svg class="ed" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.1 2.2a1.6 1.6 0 0 1 2.3 0l.4.4a1.6 1.6 0 0 1 0 2.3L6 12.7 2.6 13.4l.7-3.4 7.8-7.8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.6 3.7l2.7 2.7" stroke="currentColor" stroke-width="1.5"/></svg></button>
     </div>
     <div class="period" id="period"></div>
     <div class="kpis">
       <div class="kpi debt"><div class="lbl">Güncel toplam borç</div><div class="val" id="kDebt">—</div><div class="sub">Kalan tüm ödemeler</div></div>
       <div class="kpi"><div class="lbl" id="kNowLbl">Bu ay ödenecek</div><div class="val" id="kNow">—</div><div class="sub" id="kNowSub">&nbsp;</div></div>
       <div class="kpi"><div class="lbl">Aştık biraz</div><div class="val" id="kOver">—</div><div class="sub" id="kOverSub">&nbsp;</div></div>
-      <div class="kpi"><div class="lbl" id="kFreeLbl">9 ayda durum</div><div class="val" id="kFree">—</div><div class="sub" id="kFreeSub">&nbsp;</div></div>
+      <div class="kpi kpi-btn" id="kFreeBox" role="button" tabindex="0" aria-label="Kurtarma hedef ayını değiştir"><div class="lbl"><span id="kFreeLbl">Hedef ay</span> <svg class="ed" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.1 2.2a1.6 1.6 0 0 1 2.3 0l.4.4a1.6 1.6 0 0 1 0 2.3L6 12.7 2.6 13.4l.7-3.4 7.8-7.8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.6 3.7l2.7 2.7" stroke="currentColor" stroke-width="1.5"/></svg></div><div class="val" id="kFree">—</div><div class="sub" id="kFreeSub">&nbsp;</div></div>
     </div>
   </div>
 </header>
@@ -644,7 +646,7 @@ function renderHeader(em){
   const nextCut=new Date(pe.getFullYear(),pe.getMonth(),pe.getDate()+1);
   const left=Math.round((nextCut-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);
   const pd=x=>x.getDate()+" "+AYK[x.getMonth()];
-  $("period").innerHTML='<button type="button" class="chip chip-btn" id="periodBtn" aria-label="Kart dönemini değiştir">Kart dönemi <b>'+pd(ps)+" – "+pd(pe)+'</b> ✎</button><span class="chip">Hesap kesimine <b>'+left+" gün</b></span>"+'<span class="chip c3">Bu dönem <b>'+AY[parseKey(payK).m]+"</b> ekstresine yazılıyor</span>";
+  $("period").innerHTML='<button type="button" class="chip chip-btn" id="periodBtn" aria-label="Kart dönemini değiştir">Kart dönemi <b>'+pd(ps)+" – "+pd(pe)+'</b> <svg class="ed" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.1 2.2a1.6 1.6 0 0 1 2.3 0l.4.4a1.6 1.6 0 0 1 0 2.3L6 12.7 2.6 13.4l.7-3.4 7.8-7.8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.6 3.7l2.7 2.7" stroke="currentColor" stroke-width="1.5"/></svg></button><span class="chip">Hesap kesimine <b>'+left+" gün</b></span>"+'<span class="chip c3">Bu dönem <b>'+AY[parseKey(payK).m]+"</b> ekstresine yazılıyor</span>";
   {const now=salaryFor(curKey);let nx=null;for(let i=1;i<=24;i++){const k=addM(curKey,i);const v=salaryFor(k);if(Math.abs(v-now)>.5){nx={k,v};break}}
    $("salaryLbl").textContent=tl0(now)+" ₺"+(nx?" → "+tl0(nx.v)+" ₺ ("+AYK[parseKey(nx.k).m]+")":"");}
   if(!S.loaded.plan||!S.loaded.harc)return;
@@ -660,7 +662,7 @@ function renderHeader(em){
   $("kOverSub").textContent=cnt?(cnt===1?"Sadece 1 ay, sonrası rahat":cnt+" ayda biraz üstündeyiz"):"Hiç aşmıyoruz";
   const N=S.ayar.bitisAyi&&S.ayar.bitisAyi>=st?mDiff(st,S.ayar.bitisAyi)+1:12;let pay=0;for(let i=0;i<N;i++)pay+=salaryFor(addM(st,i));
   const rest=pay-debt;
-  const eK=addM(st,N-1);$("kFreeLbl").textContent=AY[parseKey(eK).m]+" "+parseKey(eK).y+"'ye kadar";
+  const eK=addM(st,N-1);$("kFreeLbl").textContent=AY[parseKey(eK).m]+" "+parseKey(eK).y+"'ye kadar ("+N+" ay)";
   const tz=Number(S.ayar.tazminat)||0,withT=rest+tz;
   const sg=v=>(v>=0?"+":"−")+tl0(Math.abs(v))+" ₺";
   $("kFree").textContent=rest>=0?"Kurtarılır":withT>=0&&tz>0?"Tazminatla kurtarılır":"Kurtarılmaz";$("kFree").className="val"+(rest>=0||withT>=0&&tz>0?"":" hot");
@@ -1138,6 +1140,15 @@ function go(view){try{history.replaceState(null,"","#"+view)}catch(e){}show(view
 
 for(let i=1;i<=12;i++){const o=document.createElement("option");o.value=i;o.textContent=i===1?"Tek seferde":i+" taksit";$("fInst").appendChild(o)}
 $("tabPlan").onclick=()=>go("plan");
+{const openDl=()=>{if(!S.db)return;const cur=S.ayar.bitisAyi||addM(curKey,12);
+  openOv("Kurtarma hedefi",'<div class="field"><label for="dlAy">Borçları hangi aya kadar kapatmak istiyorsun?</label><input id="dlAy" type="month" min="'+addM(curKey,1)+'" value="'+cur+'"></div><div class="preview" id="dlPrev"></div><p class="hint">Bu aya kadar alacağın maaşların toplamı, tüm borçlarınla kıyaslanır. Yetiyorsa “Kurtarılır”, yetmiyorsa “Kurtarılmaz” yazar.</p>',async()=>{
+   const v=$("dlAy").value;if(!v){toast("Bir ay seç");return false}if(v<curKey){toast("Geçmiş bir ay seçilemez");return false}
+   await S.db.doc("ayarlar/genel").update({bitisAyi:v});toast("Hedef ay: "+kLong(v));return true});
+  const upd=()=>{const v=$("dlAy").value;if(!v){$("dlPrev").textContent="";return}const em=entryMap(),st=baseStart(em);if(v<st){$("dlPrev").textContent="Hedef ay, planın başladığı aydan sonra olmalı.";return}
+   const N=mDiff(st,v)+1;let pay=0;for(let i=0;i<N;i++)pay+=salaryFor(addM(st,i));const debt=debtNow(em),rest=pay-debt,tz=Number(S.ayar.tazminat)||0;
+   $("dlPrev").textContent=N+" ay · maaşlar "+tl0(pay)+" ₺ · borç "+tl0(debt)+" ₺ → "+(rest>=0?"Kurtarılır (+"+tl0(rest)+" ₺)":"Kurtarılmaz (−"+tl0(-rest)+" ₺)"+(tz&&rest+tz>=0?", tazminatla kurtarılır":""))};
+  $("dlAy").addEventListener("input",upd);upd()};
+ $("kFreeBox").onclick=openDl;$("kFreeBox").onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openDl()}};}
 $("kHar").onclick=()=>setKind("harcama");$("kOde").onclick=()=>setKind("odeme");
 $("fTag").addEventListener("change",()=>{$("fTagNewF").hidden=$("fTag").value!=="__new";if(!$("fTagNewF").hidden)$("fTagNew").focus()});
 $("tMonths").onclick=e=>{const b=e.target.closest("[data-tm]");if(b){S.tagMonth=b.dataset.tm;render()}};
