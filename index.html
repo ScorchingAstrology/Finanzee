@@ -258,6 +258,13 @@ main .wrap>*,.chart-box{min-width:0}
 .item .t .tags .tag{margin:0}
 .tag.cat{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
 
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.copt{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 12px;font-weight:700;font-size:.85rem;min-height:36px}
+#qDel{padding:9px 18px}
+.copt[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.tag.pay{background:var(--virt-soft);color:var(--virt)}
+.item .a.ref,.list-foot .num.ref{color:var(--virt)}
+#kOde[aria-pressed="true"]{background:var(--virt);color:var(--on-virt)}
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .filters select{padding:8px 10px}
 
@@ -423,6 +430,7 @@ main .wrap>*,.chart-box{min-width:0}
     <div class="exp-grid">
       <form class="panel" id="expForm" novalidate>
         <h2 id="formTitle">Yeni ödeme ya da harcama</h2>
+        <div class="seg kindsw" role="group" aria-label="İşlem türü"><button type="button" id="kHar" aria-pressed="true">Harcama</button><button type="button" id="kOde" aria-pressed="false">Ödeme</button></div>
         <div class="field"><label for="fTarget">Nereye eklensin?</label><select id="fTarget"></select></div>
         <div class="field" id="cardField"><span class="lab">Kart</span>
           <div class="seg" role="group" aria-label="Kart"><button type="button" id="cAna" aria-pressed="true">Ana kart</button><button type="button" id="cSanal" aria-pressed="false">Sanal kart</button></div>
@@ -430,11 +438,11 @@ main .wrap>*,.chart-box{min-width:0}
         <div class="field"><label for="fDate" id="fDateLbl">Tarih</label><input type="date" id="fDate" required></div>
         <div class="field" id="fAyF" hidden><label for="fAy">Hangi ayın ödemesine yazılsın?</label><input type="month" id="fAy"></div>
         <div class="field"><label for="fDesc">Açıklama</label><input type="text" id="fDesc" placeholder="Örn. Market, uçak bileti" maxlength="80"></div>
-        <div class="field"><label for="fTag">Harcama türü</label><select id="fTag"></select></div>
+        <div class="field" id="fTagF"><label for="fTag">Harcama türü</label><select id="fTag"></select></div>
         <div class="field" id="fTagNewF" hidden><label for="fTagNew">Yeni tür adı</label><input type="text" id="fTagNew" maxlength="30" placeholder="Örn. Evcil hayvan"></div>
         <div class="row2">
-          <div class="field"><label for="fAmt">Toplam tutar (₺)</label><input type="text" id="fAmt" inputmode="decimal" placeholder="0,00"></div>
-          <div class="field"><label for="fInst">Taksit</label><select id="fInst"></select></div>
+          <div class="field"><label for="fAmt" id="fAmtL">Toplam tutar (₺)</label><input type="text" id="fAmt" inputmode="decimal" placeholder="0,00"></div>
+          <div class="field" id="fInstF"><label for="fInst">Taksit</label><select id="fInst"></select></div>
         </div>
         <div class="preview" id="fPrev"></div>
         <div class="btns">
@@ -475,6 +483,7 @@ main .wrap>*,.chart-box{min-width:0}
 
 <script>
 /* ===== Finanzee: Google E-Tablo bağlantısı ===== */
+const FZ_URL="";/* Apps Script Web app adresi buraya */
 const FZ_CFG_KEY="finanzee.baglanti",FZ_CACHE_KEY="finanzee.onbellek";
 function fzLoad(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}
 function fzSave(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
@@ -488,15 +497,15 @@ async function fzPost(cfg,ops){
 }
 function fzSetupScreen(msg){
   return new Promise(resolve=>{
-    const old=fzLoad(FZ_CFG_KEY)||{};
+    const old=fzLoad(FZ_CFG_KEY)||{};if(FZ_URL)old.url=FZ_URL;
     const w=document.createElement("div");w.className="overlay";w.style.zIndex=50;
     w.innerHTML='<form class="sheet" novalidate><h2>Verilerine bağlan</h2><p class="hint">Google E-Tablo’daki Apps Script’in Web app adresini ve kendi belirlediğin anahtarı yaz. Bu bilgiler yalnızca bu cihazda saklanır.</p>'+
       (msg?'<div class="preview" style="background:var(--bad-soft);color:var(--bad)">'+msg+'</div>':'')+
       '<div class="field"><label for="fzUrl">Web app adresi</label><input id="fzUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div>'+
-      '<div class="field"><label for="fzKey">Anahtar</label><input id="fzKey" type="password" autocomplete="off"></div>'+
+      '<div class="field"><label for="fzKey">Şifre</label><input id="fzKey" type="password" autocomplete="current-password"></div>'+
       '<div class="btns"><button type="submit" class="btn primary">Bağlan</button></div></form>';
     document.body.appendChild(w);
-    w.querySelector("#fzUrl").value=old.url||"";w.querySelector("#fzKey").value=old.key||"";
+    w.querySelector("#fzUrl").value=old.url||"";if(FZ_URL){w.querySelector("#fzUrl").closest(".field").hidden=true;w.querySelector(".hint").textContent="Şifreni bir kez yaz; bu cihaz seni hatırlayacak."}w.querySelector("#fzKey").value=old.key||"";
     w.querySelector("form").addEventListener("submit",async e=>{
       e.preventDefault();const btn=w.querySelector("button");
       const cfg={url:w.querySelector("#fzUrl").value.trim(),key:w.querySelector("#fzKey").value};
@@ -509,7 +518,7 @@ function fzSetupScreen(msg){
   });
 }
 async function fzConnect(){
-  let cfg=fzLoad(FZ_CFG_KEY),docs=fzLoad(FZ_CACHE_KEY);
+  let cfg=fzLoad(FZ_CFG_KEY),docs=fzLoad(FZ_CACHE_KEY);if(cfg&&FZ_URL)cfg.url=FZ_URL;
   if(!cfg){const r=await fzSetupScreen();cfg=r.cfg;docs=r.docs}
   const db=fzMakeDb(cfg,docs||{});
   if(docs){db._refresh()}else{try{db._replace(await fzFetchAll(cfg))}catch(e){const r=await fzSetupScreen("Verilere ulaşılamadı, bağlantıyı kontrol et.");cfg=r.cfg;db._cfg(cfg);db._replace(r.docs)}}
@@ -565,7 +574,7 @@ const tl=v=>fmt2.format(v)+" ₺";
 const tl0=v=>fmt0.format(Math.round(v));
 const $=id=>document.getElementById(id);
 
-const S={db:null,plan:null,ayar:{maas:83000,kesimGunu:2,zamAyi:"2027-01",zamOrani:28.4,zamliMaas:0,bitisAyi:"2027-11",tazminat:0},harc:[],gun:[],vars:[],maaslar:[],gelir:[],fiyat:{},loaded:{plan:false,harc:false,gun:false,vars:false},offset:0,selMonth:null,editId:null,card:"ana"};
+const S={db:null,plan:null,ayar:{maas:83000,kesimGunu:2,zamAyi:"2027-01",zamOrani:28.4,zamliMaas:0,bitisAyi:"2027-11",tazminat:0},kind:"harcama",harc:[],gun:[],vars:[],maaslar:[],gelir:[],fiyat:{},loaded:{plan:false,harc:false,gun:false,vars:false},offset:0,selMonth:null,editId:null,card:"ana"};
 
 const key=(y,m)=>y+"-"+String(m+1).padStart(2,"0");
 const parseKey=k=>{const [y,m]=k.split("-").map(Number);return {y,m:m-1}};
@@ -596,17 +605,27 @@ function firstKey(dateStr,t){const [y,m,d]=dateStr.split("-").map(Number);const 
 function entryMap(){
   const map={};
   for(const h of S.harc){
-    const t=tgt(h),n=Math.max(1,h.taksit||1),per=(Number(h.tutar)||0)/n,k0=(!isCardT(t)&&h.ay)?h.ay:firstKey(h.tarih,t);
+    const pay=h.islem==="odeme",t=tgt(h),n=pay?1:Math.max(1,h.taksit||1),per=(pay?-1:1)*(Number(h.tutar)||0)/n,k0=((pay||!isCardT(t))&&h.ay)?h.ay:firstKey(h.tarih,t);
     const skip=Array.isArray(h.haric)?h.haric:[];
     for(let i=0;i<n;i++){const k=addM(k0,i);if(skip.includes(k))continue;(map[k]=map[k]||[]).push({h,i,amt:per,t})}
   }
   return map;
 }
-function rowAmt(r,k,em){return (Number((r.aylar||{})[k])||0)+(em[k]||[]).filter(c=>c.t===r.id).reduce((s,c)=>s+c.amt,0)}
+/* avans interest (monthly rate, accrued daily) + taksitli avans merged into avans */
+const hasAvans=b=>fixedRows().some(x=>x.banka===b&&tipOf(x)==="avans");
+const visRows=()=>fixedRows().filter(r=>!(tipOf(r)==="taksitli"&&hasAvans(r.banka)));
+const faizRate=r=>r.faiz===undefined?4.25:(Number(r.faiz)||0);
+const faizGun=r=>Math.min(28,Math.max(1,Number(r.faizGun)||1));
+function faizDays(r){const g=faizGun(r),d=today;let st=new Date(d.getFullYear(),d.getMonth(),g);if(d.getDate()<g)st=new Date(d.getFullYear(),d.getMonth()-1,g);return Math.round((new Date(d.getFullYear(),d.getMonth(),d.getDate())-st)/864e5)}
+function mergedIds(r){if(tipOf(r)!=="avans")return [r.id];const first=fixedRows().find(x=>x.banka===r.banka&&tipOf(x)==="avans");const ids=[r.id];if(first&&first.id===r.id)fixedRows().forEach(x=>{if(x.banka===r.banka&&tipOf(x)==="taksitli")ids.push(x.id)});return ids}
+function baseAmt(r,k,em){const ids=mergedIds(r);let v=0;for(const id of ids){const x=rowOf(id);v+=Number(((x&&x.aylar)||{})[k])||0}for(const c of (em[k]||[]))if(ids.includes(c.t))v+=c.amt;return v}
+function faizInfo(r,em){if(tipOf(r)!=="avans"||!faizRate(r))return null;for(const k of allKeys(em)){if(k<curKey)continue;const b=baseAmt(r,k,em);if(b>0.005){const days=faizDays(r);return {k,base:b,days,amt:Math.round(b*faizRate(r)/100*days/30*100)/100}}}return null}
+function rowAmt(r,k,em){const fi=faizInfo(r,em);return baseAmt(r,k,em)+(fi&&fi.k===k?fi.amt:0)}
 function addedAmt(rid,k,em){return (em[k]||[]).filter(c=>c.t===rid).reduce((s,c)=>s+c.amt,0)}
 function totalsFor(k,em){
   let fixed=0;for(const r of fixedRows())fixed+=Number((r.aylar||{})[k])||0;
   let card=0,acc=0;for(const c of (em[k]||[])){if(isCardT(c.t))card+=c.amt;else acc+=c.amt}
+  for(const r of fixedRows()){const fi=faizInfo(r,em);if(fi&&fi.k===k)acc+=fi.amt}
   return {card,total:fixed+acc+card};
 }
 function allKeys(em){const s=new Set(Object.keys(em));for(const r of fixedRows())for(const k in (r.aylar||{}))s.add(k);return [...s].sort()}
@@ -633,11 +652,11 @@ function renderHeader(em){
   $("kDebt").textContent="−"+tl(debt);
   const st=baseStart(em),t=totalsFor(st,em);
   $("kNowLbl").textContent=AY[parseKey(st).m]+" ödenecek";
-  $("kNow").textContent=tl(t.total);
+  $("kNow").textContent=(t.total>0.005?"−":"")+tl(t.total);
   const df=salaryFor(st)-t.total;$("kNowSub").textContent=df<0?"Maaşın "+tl0(-df)+" ₺ üstü":"Maaştan "+tl0(df)+" ₺ kalıyor";
   let over=0,cnt=0;
   for(let i=0;i<12;i++){const k=addM(st,i);const x=totalsFor(k,em).total,ms=salaryFor(k);if(x>ms){over+=x-ms;cnt++}}
-  $("kOver").textContent=tl(over);$("kOver").className="val"+(over>0?" hot":"");
+  $("kOver").textContent=(over>0.005?"−":"")+tl(over);$("kOver").className="val"+(over>0?" hot":"");
   $("kOverSub").textContent=cnt?(cnt===1?"Sadece 1 ay, sonrası rahat":cnt+" ayda biraz üstündeyiz"):"Hiç aşmıyoruz";
   const N=S.ayar.bitisAyi&&S.ayar.bitisAyi>=st?mDiff(st,S.ayar.bitisAyi)+1:12;let pay=0;for(let i=0;i<N;i++)pay+=salaryFor(addM(st,i));
   const rest=pay-debt;
@@ -690,12 +709,12 @@ function renderTable(em,keys){
   const dd=salSum-tsum;
   b+='<tr class="diff"><td><div class="rlabel">Maaşa göre<small>+ kalan / − aştık</small></div></td>'+T.map((t,i)=>{const d=sal[i]-t.total;return '<td class="'+(d<0?"neg":"pos")+'">'+(d<0?"−":"+")+tl0(Math.abs(d))+"</td>"}).join("")+'<td class="sum">'+(dd<0?"−":"+")+tl0(Math.abs(dd))+"</td></tr>";
   const groups={};const order=[];
-  for(const r of rows){if(!groups[r.banka]){groups[r.banka]=[];order.push(r.banka)}groups[r.banka].push(r)}
+  for(const r of rows.filter(x=>visRows().includes(x))){if(!groups[r.banka]){groups[r.banka]=[];order.push(r.banka)}groups[r.banka].push(r)}
   for(const g of order){
     b+='<tr class="group"><td>'+esc(g)+'</td><td colspan="'+(keys.length+1)+'"></td></tr>';
     for(const r of groups[g]){
       const vs=keys.map(k=>rowAmt(r,k,em));
-      b+='<tr><td><div class="rlabel">'+esc(r.ad)+(r.not?"<small>"+esc(r.not)+"</small>":"")+"</div></td>"+vs.map((v,i)=>cell(v,keys[i])).join("")+'<td class="sum">'+tl0(vs.reduce((a,c)=>a+c,0))+"</td></tr>";
+      b+='<tr><td><div class="rlabel">'+esc(r.ad)+(tipOf(r)==="avans"&&faizRate(r)?"<small>günlük faiz dahil · %"+String(faizRate(r)).replace(".",",")+"/ay</small>":r.not?"<small>"+esc(r.not)+"</small>":"")+"</div></td>"+vs.map((v,i)=>cell(v,keys[i])).join("")+'<td class="sum">'+tl0(vs.reduce((a,c)=>a+c,0))+"</td></tr>";
     }
   }
   b+="</tbody>";
@@ -842,9 +861,9 @@ function bankList(){const b=(S.plan&&Array.isArray(S.plan.bankalar))?S.plan.bank
 function remaining(r,em){let s=0;for(const k of allKeys(em))if(k>=curKey)s+=rowAmt(r,k,em);return s}
 function renderBanks(em){
   const banks=bankList();
-  $("banks").innerHTML=banks.length?banks.map(b=>{const rows=fixedRows().filter(r=>r.banka===b);const tot=rows.reduce((s,r)=>s+remaining(r,em),0);
+  $("banks").innerHTML=banks.length?banks.map(b=>{const rows=visRows().filter(r=>r.banka===b);const tot=rows.reduce((s,r)=>s+remaining(r,em),0);
     return '<div class="vcard"><div class="vh"><h3>'+esc(b)+'</h3><span style="display:flex;gap:6px;align-items:center"><b>'+tl0(tot)+' ₺</b><button type="button" class="bdel" data-bdel="'+esc(b)+'">Bankayı sil</button></span></div>'+
-     (rows.length?rows.map(r=>{const t=tipOf(r),rem=remaining(r,em);return '<button type="button" class="vrow" data-row="'+r.id+'"><span class="vn"><span><span class="btip'+(t==="kart"?" kart":"")+'">'+BTYPES[t]+"</span>"+esc(r.ad)+"</span><small>"+(t==="kart"||t==="hesap"&&!Object.keys(r.aylar||{}).length?"Harcamalardan hesaplanır":rowSummary(r))+'</small></span><span class="vv'+(rem?"":" z")+'">'+(rem?tl0(rem)+" ₺":"–")+"</span></button>"}).join(""):'<div class="state">Henüz ürün yok.</div>')+
+     (rows.length?rows.map(r=>{const t=tipOf(r),rem=remaining(r,em);return '<button type="button" class="vrow" data-row="'+r.id+'"><span class="vn"><span><span class="btip'+(t==="kart"?" kart":"")+'">'+BTYPES[t]+"</span>"+esc(r.ad)+"</span><small>"+(t==="kart"||t==="hesap"&&!Object.keys(r.aylar||{}).length?"Harcamalardan hesaplanır":rowSummary(r))+(()=>{const fi=faizInfo(r,em);return fi?" · bugüne kadar faiz +"+tl0(fi.amt)+" ₺ ("+fi.days+" gün)":""})()+'</small></span><span class="vv'+(rem?"":" z")+'">'+(rem?tl0(rem)+" ₺":"–")+"</span></button>"}).join(""):'<div class="state">Henüz ürün yok.</div>')+
      '<button type="button" class="vadd" data-badd="'+esc(b)+'">+ Ürün ekle (kredi, kart, avans…)</button></div>'}).join(""):'<div class="vcard"><div class="state">Henüz banka yok. “+ Banka ekle” ile başla.</div></div>';
 }
 function rowSummary(r){const ks=Object.keys(r.aylar||{}).sort();if(!ks.length)return "Taksit girilmedi, dokunup ekle";const v=r.aylar[ks[0]],same=ks.every(k=>Math.abs(r.aylar[k]-v)<.005);
@@ -853,7 +872,7 @@ function rowSummary(r){const ks=Object.keys(r.aylar||{}).sort();if(!ks.length)re
 const newId=p=>p+"-"+Math.random().toString(36).slice(2,8);
 async function savePlan(mut){const p=JSON.parse(JSON.stringify(S.plan||{satirlar:[]}));p.satirlar=p.satirlar||[];p.bankalar=bankList();mut(p);await S.db.doc("plan/odemeler").set(p)}
 function addBank(){
-  openOv("Banka ekle",'<div class="field"><label for="bName">Banka adı</label><input id="bName" type="text" maxlength="40" placeholder="Örn. Ziraat"></div><div class="field"><span class="lab">Bu bankada kullandıkların</span><div class="checks">'+Object.entries(BTYPES).filter(([k])=>k!=="diger").map(([k,l])=>'<label><input type="checkbox" value="'+k+'">'+l+"</label>").join("")+'</div></div><p class="hint">Taksit tutarlarını banka eklendikten sonra ürüne dokunarak girersin.</p>',async()=>{
+  openOv("Banka ekle",'<div class="field"><label for="bName">Banka adı</label><input id="bName" type="text" maxlength="40" placeholder="Örn. Ziraat"></div><div class="field"><span class="lab">Bu bankada kullandıkların</span><div class="checks">'+Object.entries(BTYPES).filter(([k])=>k!=="diger"&&k!=="taksitli").map(([k,l])=>'<label><input type="checkbox" value="'+k+'">'+l+"</label>").join("")+'</div></div><p class="hint">Taksit tutarlarını banka eklendikten sonra ürüne dokunarak girersin.</p>',async()=>{
     const name=$("bName").value.trim();if(!name){toast("Banka adını yaz");return false}
     if(bankList().some(b=>b.toLocaleLowerCase("tr")===name.toLocaleLowerCase("tr"))){toast("Bu banka zaten var");return false}
     const picks=[...$("ovBody").querySelectorAll("input[type=checkbox]:checked")].map(i=>i.value);
@@ -863,11 +882,12 @@ function addBank(){
 function editRow(r,bank){
   const isNew=!r;const t0=r?tipOf(r):"kredi";
   const ks=r?Object.keys(r.aylar||{}).sort():[];const v0=ks.length?r.aylar[ks[0]]:0;
-  const typeSel=isNew?'<div class="field"><label for="rTip">Ürün</label><select id="rTip">'+Object.entries(BTYPES).map(([k,l])=>'<option value="'+k+'">'+l+"</option>").join("")+"</select></div>":"";
+  const typeSel=isNew?'<div class="field"><label for="rTip">Ürün</label><select id="rTip">'+Object.entries(BTYPES).filter(([k])=>k!=="taksitli").map(([k,l])=>'<option value="'+k+'">'+l+"</option>").join("")+"</select></div>":"";
   openOv(isNew?bank+" · ürün ekle":r.banka+" · "+r.ad,typeSel+
    '<div class="field"><label for="rAd">Ad</label><input id="rAd" type="text" maxlength="40" value="'+esc(r?r.ad:"")+'" placeholder="Örn. İhtiyaç kredisi"></div>'+
    '<div id="rPay" class="row2"><div class="field"><label for="rAmt">Aylık tutar (₺)</label><input id="rAmt" type="text" inputmode="decimal" value="'+(v0?fmt2.format(v0):"")+'"></div><div class="field"><label for="rCnt">Kaç ay</label><input id="rCnt" type="number" min="1" max="120" value="'+(ks.length||"")+'"></div></div>'+
    '<div class="field" id="rStartF"><label for="rStart">İlk ödeme ayı</label><input id="rStart" type="month" value="'+(ks[0]||addM(curKey,1))+'"></div>'+
+   '<div class="row2" id="rFaizF"><div class="field"><label for="rFaiz">Aylık faiz (%)</label><input id="rFaiz" type="text" inputmode="decimal" value="'+String(r?faizRate(r):4.25).replace(".",",")+'"></div><div class="field"><label for="rFaizGun">Faizin başladığı gün</label><input id="rFaizGun" type="number" min="1" max="28" value="'+(r?faizGun(r):1)+'"></div></div>'+
    '<div class="field" id="rCutF"><label for="rCut">Hesap kesim günü</label><input id="rCut" type="number" min="1" max="28" value="'+(r&&r.kesim||S.ayar.kesimGunu)+'"></div>'+
    (isNew?"":'<button type="button" class="clear" id="rDel">Bu ürünü sil</button><p class="hint">Silersen bu ürüne eklediğin ödemeler de silinir.</p>'),
    async()=>{
@@ -878,11 +898,12 @@ function editRow(r,bank){
     if(tip!=="kart"&&isFinite(amt)&&amt>0){if(!cnt||cnt<1){toast("Kaç ay süreceğini yaz");return false}if(!st){toast("İlk ödeme ayını seç");return false}aylar={};for(let i=0;i<cnt;i++)aylar[addM(st,i)]=amt}
     else if(tip!=="kart"&&!ar)aylar={};
     const row={id:r?r.id:newId(tip),ad,banka:r?r.banka:bank,tip,aylar:tip==="kart"?{}:aylar};
+    if(tip==="avans"){const fv=parseAmt($("rFaiz").value);row.faiz=isFinite(fv)&&fv>=0?fv:0;row.faizGun=Math.min(28,Math.max(1,parseInt($("rFaizGun").value,10)||1))}
     if(tip==="kart")row.kesim=Math.min(28,Math.max(1,parseInt($("rCut").value,10)||S.ayar.kesimGunu));
     if(tip!=="kart"&&cnt&&isFinite(amt)&&amt>0)row.not=cnt+" taksit";
     await savePlan(p=>{const i=p.satirlar.findIndex(x=>x.id===row.id);if(i>=0)p.satirlar[i]=Object.assign({},p.satirlar[i],row);else p.satirlar.push(row)});
     toast(isNew?"Ürün eklendi":"Kaydedildi");return true});
-  const sync=()=>{const tip=isNew?$("rTip").value:t0;const card=tip==="kart";const noPay=card||tip==="hesap";$("rPay").hidden=noPay;$("rStartF").hidden=noPay;$("rCutF").hidden=!card;if(isNew&&!$("rAd").dataset.touched)$("rAd").value=BTYPES[tip]};
+  const sync=()=>{const tip=isNew?$("rTip").value:t0;$("rFaizF").hidden=tip!=="avans";const card=tip==="kart";const noPay=card||tip==="hesap";$("rPay").hidden=noPay;$("rStartF").hidden=noPay;$("rCutF").hidden=!card;if(isNew&&!$("rAd").dataset.touched)$("rAd").value=BTYPES[tip]};
   if(isNew){$("rTip").addEventListener("change",sync);$("rAd").addEventListener("input",()=>$("rAd").dataset.touched="1")}sync();
   const del=$("rDel");if(del)del.onclick=async()=>{if(!arm(del,"Emin misin? Tekrar dokun"))return;try{await deleteRows([r.id]);toast("Ürün silindi");closeOv()}catch(e){writeErr(e)}};
 }
@@ -953,23 +974,50 @@ function fillTags(sel){const o='<option value="">Tür seçme</option>'+tagList()
 function renderTags(em,keys){
   if(!S.tagMonth||!keys.includes(S.tagMonth))S.tagMonth=keys[0];
   const k=S.tagMonth;
-  $("tMonths").innerHTML=keys.map(m=>{const t=(em[m]||[]).reduce((s,c)=>s+c.amt,0);const {y,m:mm}=parseKey(m);return '<button type="button" class="mchip" data-tm="'+m+'" aria-pressed="'+(m===k)+'"><span>'+AYK[mm]+" "+y+"</span><b>"+tl0(t)+" ₺</b></button>"}).join("");
+  $("tMonths").innerHTML=keys.map(m=>{const t=(em[m]||[]).filter(c=>c.h.islem!=="odeme").reduce((s,c)=>s+c.amt,0);const {y,m:mm}=parseKey(m);return '<button type="button" class="mchip" data-tm="'+m+'" aria-pressed="'+(m===k)+'"><span>'+AYK[mm]+" "+y+"</span><b>"+tl0(t)+" ₺</b></button>"}).join("");
   const by={},cnt={};let tot=0;
-  for(const c of (em[k]||[])){const t=c.h.etiket||"";by[t]=(by[t]||0)+c.amt;cnt[t]=(cnt[t]||0)+1;tot+=c.amt}
+  for(const c of (em[k]||[])){if(c.h.islem==="odeme")continue;const t=c.h.etiket||"";by[t]=(by[t]||0)+c.amt;cnt[t]=(cnt[t]||0)+1;tot+=c.amt}
   const ents=Object.entries(by).filter(([,v])=>Math.abs(v)>.005).sort((a,b)=>(a[0]==="")-(b[0]==="")||b[1]-a[1]);
   const max=Math.max(...ents.map(e=>Math.abs(e[1])),1);
   const tagged=ents.filter(e=>e[0]).reduce((s,e)=>s+e[1],0);
   if(!ents.length){$("tDash").innerHTML='<div class="state">'+kLong(k)+" için eklenmiş harcama yok.</div>";return}
-  $("tDash").innerHTML='<div class="tdtop"><div><b>'+tl(tot)+'</b><br><small>'+kLong(k)+" · eklenen harcama ve ödemeler</small></div><small>"+(tot?"%"+fmt0.format(tagged/tot*100)+" türü belli":"")+'</small></div><div class="tbars">'+
+  $("tDash").innerHTML='<div class="tdtop"><div><b>'+tl(tot)+'</b><br><small>'+kLong(k)+" · eklenen harcamalar</small></div><small>"+(tot?"%"+fmt0.format(tagged/tot*100)+" türü belli":"")+'</small></div><div class="tbars">'+
    ents.map(([t,v])=>'<div class="tbar'+(t?"":" none")+'"><div class="tl"><span>'+esc(t||"Türü seçilmemiş")+"<small>"+cnt[t]+" kayıt · %"+fmt0.format(tot?v/tot*100:0)+"</small></span><span>"+tl0(v)+' ₺</span></div><div class="ttrack"><div class="tfill" style="width:'+Math.max(2,Math.abs(v)/max*100)+'%"></div></div></div>').join("")+
    '</div><p class="hint tdnote">'+(by[""]?"Türü seçilmemiş kayıtlara “Ekle / düzenle” sayfasında dokunup tür seçebilirsin. ":"")+'<button type="button" class="vadd" data-tagopen="1" style="padding:0;min-height:0">'+AY[parseKey(k).m]+" kayıtlarını aç</button></p>";
+}
+
+/* quick edit from the list */
+function quickEdit(id){
+  const h=S.harc.find(x=>x.id===id);if(!h)return;
+  let tag=h.etiket||"";
+  const chips=()=>tagList().map(t=>'<button type="button" class="copt" data-t="'+esc(t)+'" aria-pressed="'+(t===tag)+'">'+esc(t)+"</button>").join("")+'<button type="button" class="copt" data-t="__new" aria-pressed="false">+ Yeni tür</button>';
+  const n=Math.max(1,h.taksit||1);
+  openOv("Kaydı düzenle",
+   '<div class="preview">'+(h.islem==="odeme"?"Ödeme · ":"")+esc(tgtName(tgt(h)))+(isCardT(tgt(h))?" · "+(h.kart==="sanal"?"Sanal kart":"Ana kart"):"")+(n>1?" · "+n+" taksit":"")+'</div>'+
+   '<div class="field"><label for="qDesc">Açıklama</label><input id="qDesc" type="text" maxlength="80" value="'+esc(h.aciklama||"")+'"></div>'+
+   '<div class="field"'+(h.islem==="odeme"?" hidden":"")+'><span class="lab">Harcama türü</span><div class="chips" id="qChips">'+chips()+'</div></div>'+
+   '<div class="field" id="qNewF" hidden><label for="qNew">Yeni tür adı</label><input id="qNew" type="text" maxlength="30" placeholder="Örn. Evcil hayvan"></div>'+
+   '<div class="row2"><div class="field"><label for="qDate">Tarih</label><input id="qDate" type="date" value="'+h.tarih+'"></div><div class="field"><label for="qAmt">'+(h.islem==="odeme"?"Ödeme tutarı (₺)":n>1?"Toplam tutar (₺)":"Tutar (₺)")+'</label><input id="qAmt" type="text" inputmode="decimal" value="'+fmt2.format(h.tutar)+'"></div></div>'+
+   '<div class="btns"><button type="button" class="btn" id="qMore">Diğer ayarlar</button><button type="button" class="clear" id="qDel">Sil</button></div>',
+   async()=>{
+    const a=parseAmt($("qAmt").value),d=$("qDate").value;
+    if(!d){toast("Tarihi seç");return false}if(!isFinite(a)||a===0){toast("Tutarı sayı olarak yaz, örn. 1.250,00");return false}
+    let t=tag;if(t==="__new"){t=$("qNew").value.trim();if(!t){toast("Yeni türün adını yaz");return false}if(!tagList().includes(t)){try{await S.db.doc("ayarlar/genel").update({etiketler:customTags().concat(t)})}catch(e){}}}
+    const body=Object.assign({},h);delete body.id;
+    body.aciklama=$("qDesc").value.trim();body.etiket=t||"";body.tarih=d;body.tutar=Math.round((h.islem==="odeme"?Math.abs(a):a)*100)/100;
+    await S.db.doc("harcamalar/"+h.id).set(body);toast("Kaydedildi");return true});
+  $("qChips").onclick=e=>{const c=e.target.closest("[data-t]");if(!c)return;tag=c.dataset.t===tag?"":c.dataset.t;
+    $("qChips").querySelectorAll("[data-t]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===tag));
+    $("qNewF").hidden=tag!=="__new";if(tag==="__new")$("qNew").focus()};
+  $("qMore").onclick=()=>{closeOv();loadForm(h.id);render()};
+  const del=$("qDel");del.onclick=async()=>{if(!arm(del,"Emin misin? Tekrar dokun"))return;try{await S.db.doc("harcamalar/"+h.id).delete();toast("Silindi");closeOv()}catch(e){writeErr(e)}};
 }
 
 /* phone month cards */
 function renderCards(em,keys){
   const rows=fixedRows();
   const groups={};const order=[];
-  for(const r of rows){if(!groups[r.banka]){groups[r.banka]=[];order.push(r.banka)}groups[r.banka].push(r)}
+  for(const r of rows.filter(x=>visRows().includes(x))){if(!groups[r.banka]){groups[r.banka]=[];order.push(r.banka)}groups[r.banka].push(r)}
   const line=(l,v)=>'<dt>'+esc(l)+'</dt><dd class="'+(Math.abs(v)<.005?"z":"")+'">'+(Math.abs(v)<.005?"–":tl0(v)+" ₺")+"</dd>";
   $("cards").innerHTML=keys.map(k=>{
     const maas=salaryFor(k),t=totalsFor(k,em),d=maas-t.total;
@@ -1014,43 +1062,52 @@ function fillFilters(all){
   $("flSrc").innerHTML='<option value="">Tüm kaynaklar</option>'+srcs.map(k=>'<option value="'+k+'">'+SRC_LBL[k]+"</option>").join("");
   $("flBank").value=S.fBank||"";$("flSrc").value=S.fSrc||"";
 }
+const sgn2=v=>Math.abs(v)<.005?tl(0):(v>0?"−":"+")+tl(Math.abs(v));
+const sgn0=v=>Math.abs(v)<.5?"0":(v>0?"−":"+")+tl0(Math.abs(v));
 function renderList(em,keys){
   if(!S.selMonth)S.selMonth=keys[0];
   const months=keys.includes(S.selMonth)?keys:[S.selMonth,...keys.slice(0,11)].sort();
-  $("months").innerHTML=months.map(k=>{const t=(em[k]||[]).reduce((s,c)=>s+c.amt,0);const {y,m}=parseKey(k);return '<button type="button" class="mchip" data-m="'+k+'" aria-pressed="'+(k===S.selMonth)+'"><span>'+AYK[m]+" "+y+"</span><b>"+tl0(t)+" ₺</b></button>"}).join("");
-  $("listTitle").textContent=kLong(S.selMonth)+" ödemeleri";
+  $("months").innerHTML=months.map(k=>{const t=(em[k]||[]).reduce((s,c)=>s+c.amt,0);const {y,m}=parseKey(k);return '<button type="button" class="mchip" data-m="'+k+'" aria-pressed="'+(k===S.selMonth)+'"><span>'+AYK[m]+" "+y+"</span><b>"+sgn0(t)+" ₺</b></button>"}).join("");
+  $("listTitle").textContent=kLong(S.selMonth)+" işlemleri";
   const allM=em[S.selMonth]||[];fillFilters(allM);
   const fOn=!!(S.fBank||S.fSrc);
-  const items=allM.filter(passF).sort((a,b)=>isCardT(a.t)-isCardT(b.t)||(a.h.tarih<b.h.tarih?-1:1));
-  if(!items.length){$("list").innerHTML='<div class="list"><div class="state">'+(fOn&&allM.length?"Bu filtreye uyan kayıt yok. "+'<button type="button" class="vadd" data-fclear="1" style="padding:0;min-height:0">Filtreyi temizle</button>':"Bu aya eklenmiş ödeme yok. Soldaki formdan ekleyebilirsin.")+"</div></div>";return}
+  const items=allM.filter(passF).sort((a,b)=>a.h.tarih<b.h.tarih?1:a.h.tarih>b.h.tarih?-1:(a.h.id<b.h.id?1:-1));
+  if(!items.length){$("list").innerHTML='<div class="list"><div class="state">'+(fOn&&allM.length?"Bu filtreye uyan kayıt yok. "+'<button type="button" class="vadd" data-fclear="1" style="padding:0;min-height:0">Filtreyi temizle</button>':"Bu aya eklenmiş harcama ya da ödeme yok. Formdan ekleyebilirsin.")+"</div></div>";return}
   const by={};let tot=0;
   const html=items.map(c=>{const h=c.h;const [,m,d]=h.tarih.split("-");const sk=(bankOf(c)?bankOf(c)+" ":"")+SRC_LBL[srcOf(c)];by[sk]=(by[sk]||0)+c.amt;tot+=c.amt;const n=h.taksit||1;
     const rr=rowOf(c.t),tp=rr?tipOf(rr):(c.t==="kart"?"kart":"diger");
     const tcls=tp==="kart"?(h.kart==="sanal"?"sanal":""):tp==="avans"?"avans":tp==="taksitli"?"avans":tp==="kredi"?"kredi":tp==="hesap"?"hesap":"acc";
-    const tlab=tp==="kart"?(h.kart==="sanal"?"Sanal kart":"Ana kart"):tp==="diger"?(rr?rr.ad:"Hesap"):BTYPES[tp];
-    const tag=(rr&&rr.banka?'<span class="tag bank">'+esc(rr.banka)+"</span>":"")+'<span class="tag '+tcls+'">'+esc(tlab)+"</span>";
-    return '<button type="button" class="item'+(S.editId===h.id?" sel":"")+'" data-id="'+h.id+'"><span class="d">'+d+"."+m+'</span><span class="t"><div>'+esc(h.aciklama||"Ödeme")+'</div><span class="tags">'+tag+(h.etiket?'<span class="tag cat">'+esc(h.etiket)+"</span>":"")+"</span><small>"+(n>1?(c.i+1)+"/"+n+" taksit · toplam "+tl0(h.tutar)+" ₺":"Tek seferde")+'</small></span><span class="a'+(c.amt<0?" ref":"")+'">'+tl(c.amt)+"</span></button>"}).join("");
-  const split=Object.keys(by).map(t=>"<span>"+esc(t)+" "+tl0(by[t])+" ₺</span>").join("");
-  $("list").innerHTML='<div class="list">'+html+'<div class="list-foot main"><span>'+(fOn?"Filtrelenenlerin toplamı ("+items.length+" kayıt)":"Eklenenlerin toplamı")+'</span><span class="num">'+tl(tot)+'</span></div><div class="list-foot split">'+split+'</div><div class="list-foot"><button type="button" class="clear" data-clearall="1">'+(fOn?"Filtredeki "+items.length+" satırı sil":AY[parseKey(S.selMonth).m]+" ayındaki tüm satırları sil")+"</button></div></div>";
+    const tlab=tp==="kart"?(h.islem==="odeme"?"Kredi kartı":h.kart==="sanal"?"Sanal kart":"Ana kart"):tp==="diger"?(rr?rr.ad:"Hesap"):BTYPES[tp];
+    const tag=(h.islem==="odeme"?'<span class="tag pay">Ödeme</span>':"")+(rr&&rr.banka?'<span class="tag bank">'+esc(rr.banka)+"</span>":"")+'<span class="tag '+tcls+'">'+esc(tlab)+"</span>";
+    return '<button type="button" class="item'+(S.editId===h.id?" sel":"")+'" data-id="'+h.id+'"><span class="d">'+d+"."+m+'</span><span class="t"><div>'+esc(h.aciklama||(h.islem==="odeme"?"Ödeme":"Harcama"))+'</div><span class="tags">'+tag+(h.etiket?'<span class="tag cat">'+esc(h.etiket)+"</span>":"")+"</span><small>"+(h.islem==="odeme"?"Borçtan düştü":n>1?(c.i+1)+"/"+n+" taksit · toplam "+tl0(h.tutar)+" ₺":"Tek seferde")+'</small></span><span class="a'+(c.amt<0?" ref":"")+'">'+sgn2(c.amt)+"</span></button>"}).join("");
+  const split=Object.keys(by).map(t=>"<span>"+esc(t)+" "+sgn0(by[t])+" ₺</span>").join("");
+  $("list").innerHTML='<div class="list">'+html+'<div class="list-foot main"><span>'+(fOn?"Filtrelenenlerin toplamı ("+items.length+" kayıt)":"Eklenenlerin toplamı")+'</span><span class="num'+(tot<0?" ref":"")+'">'+sgn2(tot)+'</span></div><div class="list-foot split">'+split+'</div><div class="list-foot"><button type="button" class="clear" data-clearall="1">'+(fOn?"Filtredeki "+items.length+" satırı sil":AY[parseKey(S.selMonth).m]+" ayındaki tüm satırları sil")+"</button></div></div>";
 }
 
 /* form */
 function parseAmt(s){s=String(s||"").trim().replace(/\s|₺/g,"");if(!s)return NaN;if(s.includes(","))s=s.replace(/\./g,"").replace(",",".");else if(/^-?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,"");return Number(s)}
 let lastTargets="";
 function fillTargets(){
-  const opts=fixedRows().map(r=>[r.id,r.ad+(r.banka?" · "+r.banka:"")]);if(!opts.length)opts.push(["kart","Kredi kartı"]);
+  const opts=visRows().map(r=>[r.id,r.ad+(r.banka?" · "+r.banka:"")]);if(!opts.length)opts.push(["kart","Kredi kartı"]);
   const sig=JSON.stringify(opts);if(sig===lastTargets)return;lastTargets=sig;
   const cur=$("fTarget").value||"kart";
   $("fTarget").innerHTML=opts.map(([v,l])=>'<option value="'+esc(v)+'">'+esc(l)+"</option>").join("");
   $("fTarget").value=opts.some(o=>o[0]===cur)?cur:(opts.find(o=>isCardT(o[0]))||opts[0])[0];syncTarget();
 }
 function defAy(d,t){if(!d)return "";const k=d.slice(0,7);const tp=rowOf(t)?tipOf(rowOf(t)):"";return tp==="avans"||tp==="taksitli"?addM(k,1):k}
-function entryMonth(d,t){return isCardT(t)?firstKey(d,t):($("fAy").value||defAy(d,t))}
+function defOde(d){if(!d)return "";const k=d.slice(0,7),f=baseStart(entryMap());return k<f?f:k}
+const isPayK=()=>S.kind==="odeme";
+function entryMonth(d,t){if(isPayK())return $("fAy").value||defOde(d);return isCardT(t)?firstKey(d,t):($("fAy").value||defAy(d,t))}
+function setKind(k){S.kind=k;$("kHar").setAttribute("aria-pressed",k!=="odeme");$("kOde").setAttribute("aria-pressed",k==="odeme");delete $("fAy").dataset.touched;syncTarget()}
 function syncTarget(){
-  const isCard=isCardT($("fTarget").value);
-  $("cardField").hidden=!isCard;$("fAyF").hidden=isCard;
-  if(!isCard&&!$("fAy").dataset.touched)$("fAy").value=defAy($("fDate").value,$("fTarget").value);
-  $("fDateLbl").textContent=isCard?"Harcama tarihi":"Ödeme tarihi";
+  const pay=isPayK(),isCard=isCardT($("fTarget").value)&&!pay;
+  $("cardField").hidden=!isCard;$("fAyF").hidden=isCard;$("fTagF").hidden=pay;$("fInstF").hidden=pay;$("fTagNewF").hidden=pay||$("fTag").value!=="__new";
+  if(pay)$("fInst").value="1";
+  $("fAyF").querySelector("label").textContent=pay?"Hangi ayın borcundan düşsün?":"Hangi ayın ödemesine yazılsın?";
+  if(!isCard&&!$("fAy").dataset.touched)$("fAy").value=pay?defOde($("fDate").value):defAy($("fDate").value,$("fTarget").value);
+  $("fDateLbl").textContent=pay?"Ödeme tarihi":"Harcama tarihi";$("fAmtL").textContent=pay?"Ödeme tutarı (₺)":"Toplam tutar (₺)";
+  $("fDesc").placeholder=pay?"Örn. Kasım ekstre ödemesi":"Örn. Market, uçak bileti";
+  if(pay){$("fHint").textContent="Yaptığın ödeme, seçtiğin ayın borcundan düşer ve toplam borcun azalır. Listede + ile görünür.";updatePreview();return}
   $("fHint").textContent=isCard?"Kart harcaması, hesap kesim gününe (ayın "+(Number((rowOf($("fTarget").value)||{}).kesim)||S.ayar.kesimGunu)+"'si) göre ilgili ekstreye yazılır. İade için tutarı eksi yaz.":"Hesaptan yaptığın harcama ya da ödeme, seçtiğin aya yazılır. Avans hesapta varsayılan, bir sonraki ay. Taksit seçersen sonraki aylara bölünür.";
   updatePreview();
 }
@@ -1058,13 +1115,14 @@ function updatePreview(){
   const d=$("fDate").value,a=parseAmt($("fAmt").value),n=Number($("fInst").value)||1,t=$("fTarget").value||"kart";
   if(!d){$("fPrev").textContent="Tarih seç.";return}
   const k=entryMonth(d,t),where=isCardT(t)?" ekstresine":" ödemesine";
+  if(isPayK()){$("fPrev").textContent=tgtName(t)+": "+kLong(k)+" borcundan "+(isFinite(a)?tl(Math.abs(a))+" ":"")+"düşecek.";return}
   if(!isFinite(a)){$("fPrev").textContent=tgtName(t)+": "+kLong(k)+where+" eklenecek.";return}
   $("fPrev").textContent=n>1?(tgtName(t)+": "+kLong(k)+" – "+kLong(addM(k,n-1))+" arası "+n+" × "+tl(a/n)):(tgtName(t)+": "+kLong(k)+where+" "+tl(a)+" eklenecek.");
 }
 function setCard(c){S.card=c;$("cAna").setAttribute("aria-pressed",c==="ana");$("cSanal").setAttribute("aria-pressed",c==="sanal")}
 function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 function resetForm(){S.editId=null;fillTags("");delete $("fAy").dataset.touched;const t=$("fTarget").value;$("expForm").reset();if(t)$("fTarget").value=t;$("fDate").value=iso(today);$("fInst").value="1";setCard("ana");$("formTitle").textContent="Yeni ödeme ya da harcama";$("fSave").textContent="Ekle";$("fCancel").hidden=true;$("fDel").hidden=true;disarm();syncTarget()}
-function loadForm(id){const h=S.harc.find(x=>x.id===id);if(!h)return;S.editId=id;fillTags(h.etiket||"");if(h.ay){$("fAy").value=h.ay;$("fAy").dataset.touched="1"}else delete $("fAy").dataset.touched;$("fTarget").value=tgt(h);$("fDate").value=h.tarih;$("fDesc").value=h.aciklama||"";$("fAmt").value=fmt2.format(h.tutar);$("fInst").value=String(h.taksit||1);setCard(h.kart||"ana");$("formTitle").textContent="Düzenle";$("fSave").textContent="Değişiklikleri kaydet";$("fCancel").hidden=false;$("fDel").hidden=false;disarm();syncTarget();$("expForm").scrollIntoView({behavior:"smooth",block:"start"})}
+function loadForm(id){const h=S.harc.find(x=>x.id===id);if(!h)return;S.editId=id;S.kind=h.islem==="odeme"?"odeme":"harcama";$("kHar").setAttribute("aria-pressed",S.kind!=="odeme");$("kOde").setAttribute("aria-pressed",S.kind==="odeme");fillTags(h.etiket||"");if(h.ay){$("fAy").value=h.ay;$("fAy").dataset.touched="1"}else delete $("fAy").dataset.touched;$("fTarget").value=tgt(h);$("fDate").value=h.tarih;$("fDesc").value=h.aciklama||"";$("fAmt").value=fmt2.format(h.tutar);$("fInst").value=String(h.taksit||1);setCard(h.kart||"ana");$("formTitle").textContent="Düzenle";$("fSave").textContent="Değişiklikleri kaydet";$("fCancel").hidden=false;$("fDel").hidden=false;disarm();syncTarget();$("expForm").scrollIntoView({behavior:"smooth",block:"start"})}
 let armT=null;function disarm(){clearTimeout(armT);$("fDel").classList.remove("armed");$("fDel").textContent="Sil"}
 
 function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2600)}
@@ -1080,6 +1138,7 @@ function go(view){try{history.replaceState(null,"","#"+view)}catch(e){}show(view
 
 for(let i=1;i<=12;i++){const o=document.createElement("option");o.value=i;o.textContent=i===1?"Tek seferde":i+" taksit";$("fInst").appendChild(o)}
 $("tabPlan").onclick=()=>go("plan");
+$("kHar").onclick=()=>setKind("harcama");$("kOde").onclick=()=>setKind("odeme");
 $("fTag").addEventListener("change",()=>{$("fTagNewF").hidden=$("fTag").value!=="__new";if(!$("fTagNewF").hidden)$("fTagNew").focus()});
 $("tMonths").onclick=e=>{const b=e.target.closest("[data-tm]");if(b){S.tagMonth=b.dataset.tm;render()}};
 $("tDash").onclick=e=>{const b=e.target.closest("[data-tagopen]");if(b){S.selMonth=S.tagMonth;go("odemeler")}};
@@ -1103,7 +1162,7 @@ $("flBank").onchange=()=>{S.fBank=$("flBank").value;render()};$("flSrc").onchang
 $("list").onclick=async e=>{if(e.target.closest("[data-fclear]")){S.fBank="";S.fSrc="";render();return}
   const c=e.target.closest("[data-clearall]");
   if(c){if(!arm(c,"Emin misin? Tekrar dokun"))return;c.disabled=true;if(S.editId)resetForm();await clearMonth(S.selMonth);return}
-  const b=e.target.closest("[data-id]");if(b){loadForm(b.dataset.id);render()}};
+  const b=e.target.closest("[data-id]");if(b)quickEdit(b.dataset.id)};
 $("tblWrap").onclick=e=>{const b=e.target.closest("[data-k]");if(b){S.selMonth=b.dataset.k;go("odemeler")}};
 $("cards").onclick=e=>{const b=e.target.closest("[data-k]");if(b){S.selMonth=b.dataset.k;go("odemeler")}};
 $("settingsBtn").onclick=()=>{if(S.db)openSettings()};
@@ -1115,12 +1174,13 @@ $("expForm").addEventListener("submit",async e=>{
   e.preventDefault();if(!S.db){toast("Veriler bağlı değil, kaydedilemedi.");return}
   const t=$("fTarget").value||"kart",d=$("fDate").value,a=parseAmt($("fAmt").value),n=Number($("fInst").value)||1;
   if(!d){toast("Tarih seç");return}if(!isFinite(a)||a===0){toast("Tutarı sayı olarak yaz, örn. 1.250,00");return}
-  let tag=$("fTag").value;if(tag==="__new"){tag=$("fTagNew").value.trim();if(!tag){toast("Yeni türün adını yaz");return}if(!tagList().includes(tag)){try{await S.db.doc("ayarlar/genel").update({etiketler:customTags().concat(tag)})}catch(err){}}}
-  const body={hedef:t,tarih:d,aciklama:$("fDesc").value.trim(),tutar:Math.round(a*100)/100,taksit:n,etiket:tag||""};
-  if(isCardT(t))body.kart=S.card;else body.ay=entryMonth(d,t);
+  const pay=isPayK();
+  let tag=pay?"":$("fTag").value;if(tag==="__new"){tag=$("fTagNew").value.trim();if(!tag){toast("Yeni türün adını yaz");return}if(!tagList().includes(tag)){try{await S.db.doc("ayarlar/genel").update({etiketler:customTags().concat(tag)})}catch(err){}}}
+  const body={hedef:t,tarih:d,aciklama:$("fDesc").value.trim(),tutar:Math.round((pay?Math.abs(a):a)*100)/100,taksit:pay?1:n,etiket:tag||""};
+  if(pay){body.islem="odeme";body.ay=entryMonth(d,t)}else if(isCardT(t))body.kart=S.card;else body.ay=entryMonth(d,t);
   try{
     if(S.editId){const old=S.harc.find(x=>x.id===S.editId)||{};if(old.aktarilan)body.aktarilan=true;if(Array.isArray(old.haric)&&old.haric.length)body.haric=old.haric;await S.db.doc("harcamalar/"+S.editId).set(body);toast("Ödeme güncellendi")}
-    else{await S.db.collection("harcamalar").add(body);toast(tgtName(t)+" · "+kLong(entryMonth(d,t))+" ayına eklendi")}
+    else{await S.db.collection("harcamalar").add(body);toast(pay?"Ödeme eklendi · "+kLong(entryMonth(d,t))+" borcundan düştü":tgtName(t)+" · "+kLong(entryMonth(d,t))+" ayına eklendi")}
     S.selMonth=entryMonth(d,t);resetForm();render();
   }catch(err){writeErr(err)}
 });
