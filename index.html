@@ -800,7 +800,7 @@ function renderVar(){
   if(S.loaded.plan&&S.loaded.harc){const d=debtNow(entryMap()),net=total-d;
     $("vNet").innerHTML='<span class="lbl">Borçtan sonra</span><b class="'+(net<0?"neg":"pos")+'">'+(net<0?"−":"+")+tl(Math.abs(net))+'</b><small>Toplam borç −'+tl0(d)+" ₺ · varlıkların borcun %"+fmt0.format(d>0?total/d*100:100)+"’ini karşılıyor</small>"}
   const f=S.fiyat,ts=f.tarih?(()=>{const [dd,tt]=String(f.tarih).split("T");const [y,m,da]=dd.split("-").map(Number);return da+" "+AYK[m-1]+(tt?" "+tt:"")})():"";
-  $("vPrice").innerHTML='<span>Gram altın <b>'+(f.gram?tl(f.gram):"—")+'</b></span><span>Cumhuriyet <b>'+(f.cumhuriyet?tl0(f.cumhuriyet)+" ₺":"—")+'</b></span><span>$ <b>'+(f.usd?fmt2.format(f.usd):"—")+'</b></span><span>€ <b>'+(f.eur?fmt2.format(f.eur):"—")+'</b></span><span>£ <b>'+(f.gbp?fmt2.format(f.gbp):"—")+"</b></span><small>"+(ts?ts+" alış fiyatı":"Fiyat girilmedi")+'</small><button type="button" class="btn" id="vPriceBtn">Fiyatları güncelle</button>';
+  $("vPrice").innerHTML='<span>Gram altın <b>'+(f.gram?tl(f.gram):"—")+'</b></span><span>Cumhuriyet <b>'+(f.cumhuriyet?tl0(f.cumhuriyet)+" ₺":"—")+'</b></span><span>$ <b>'+(f.usd?fmt2.format(f.usd):"—")+'</b></span><span>€ <b>'+(f.eur?fmt2.format(f.eur):"—")+'</b></span><span>£ <b>'+(f.gbp?fmt2.format(f.gbp):"—")+"</b></span><small>"+(ts?(f.kaynak?"Otomatik · "+ts:ts+" alış fiyatı"):"Fiyat girilmedi")+'</small><button type="button" class="btn" id="vPriceBtn">Fiyatları güncelle</button>';
   $("varBody").innerHTML=VGROUPS.map(([g,ad])=>{const it=S.vars.filter(a=>(a.grup||"banka")===g);const sub=it.reduce((s,a)=>s+vVal(a),0);
     return '<div class="vcard"><div class="vh"><h3>'+ad+"</h3><b>"+tl(sub)+"</b></div>"+(it.length?it.map(a=>'<button type="button" class="vrow" data-vid="'+a.id+'"><span class="vn"><span>'+esc(a.ad||"Varlık")+"</span><small>"+esc(vDetail(a))+'</small></span><span class="vv'+(vVal(a)?"":" z")+'">'+(vVal(a)?tl(vVal(a)):"–")+"</span></button>").join(""):'<div class="state">'+(g==="coin"?"Coin eklediğinde burada görünecek.":"Henüz yok.")+"</div>")+(g==="altin"?'<div class="vadds"><button type="button" class="vadd" data-vadd="altin" data-kind="altin">+ Altın ekle</button><button type="button" class="vadd" data-vadd="altin" data-kind="doviz">+ Döviz ekle</button></div>':'<button type="button" class="vadd" data-vadd="'+g+'">+ '+(g==="coin"?"Coin ekle":"Hesap ekle")+"</button>")+"</div>"}).join("");
   renderIncome();
@@ -976,15 +976,15 @@ function fillTags(sel){const o='<option value="">Tür seçme</option>'+tagList()
 function renderTags(em,keys){
   if(!S.tagMonth||!keys.includes(S.tagMonth))S.tagMonth=keys[0];
   const k=S.tagMonth;
-  $("tMonths").innerHTML=keys.map(m=>{const t=(em[m]||[]).filter(c=>c.h.islem!=="odeme").reduce((s,c)=>s+c.amt,0);const {y,m:mm}=parseKey(m);return '<button type="button" class="mchip" data-tm="'+m+'" aria-pressed="'+(m===k)+'"><span>'+AYK[mm]+" "+y+"</span><b>"+tl0(t)+" ₺</b></button>"}).join("");
+  $("tMonths").innerHTML=keys.map(m=>{const t=(em[m]||[]).filter(c=>c.h.islem!=="odeme").reduce((s,c)=>s+c.amt,0);const {y,m:mm}=parseKey(m);return '<button type="button" class="mchip" data-tm="'+m+'" aria-pressed="'+(m===k)+'"><span>'+AYK[mm]+" "+y+"</span><b>"+sgn0(t)+" ₺</b></button>"}).join("");
   const by={},cnt={};let tot=0;
   for(const c of (em[k]||[])){if(c.h.islem==="odeme")continue;const t=c.h.etiket||"";by[t]=(by[t]||0)+c.amt;cnt[t]=(cnt[t]||0)+1;tot+=c.amt}
   const ents=Object.entries(by).filter(([,v])=>Math.abs(v)>.005).sort((a,b)=>(a[0]==="")-(b[0]==="")||b[1]-a[1]);
   const max=Math.max(...ents.map(e=>Math.abs(e[1])),1);
   const tagged=ents.filter(e=>e[0]).reduce((s,e)=>s+e[1],0);
   if(!ents.length){$("tDash").innerHTML='<div class="state">'+kLong(k)+" için eklenmiş harcama yok.</div>";return}
-  $("tDash").innerHTML='<div class="tdtop"><div><b>'+tl(tot)+'</b><br><small>'+kLong(k)+" · eklenen harcamalar</small></div><small>"+(tot?"%"+fmt0.format(tagged/tot*100)+" türü belli":"")+'</small></div><div class="tbars">'+
-   ents.map(([t,v])=>'<div class="tbar'+(t?"":" none")+'"><div class="tl"><span>'+esc(t||"Türü seçilmemiş")+"<small>"+cnt[t]+" kayıt · %"+fmt0.format(tot?v/tot*100:0)+"</small></span><span>"+tl0(v)+' ₺</span></div><div class="ttrack"><div class="tfill" style="width:'+Math.max(2,Math.abs(v)/max*100)+'%"></div></div></div>').join("")+
+  $("tDash").innerHTML='<div class="tdtop"><div><b>'+sgn2(tot)+'</b><br><small>'+kLong(k)+" · eklenen harcamalar</small></div><small>"+(tot?"%"+fmt0.format(tagged/tot*100)+" türü belli":"")+'</small></div><div class="tbars">'+
+   ents.map(([t,v])=>'<div class="tbar'+(t?"":" none")+'"><div class="tl"><span>'+esc(t||"Türü seçilmemiş")+"<small>"+cnt[t]+" kayıt · %"+fmt0.format(tot?v/tot*100:0)+"</small></span><span>"+sgn0(v)+' ₺</span></div><div class="ttrack"><div class="tfill" style="width:'+Math.max(2,Math.abs(v)/max*100)+'%"></div></div></div>').join("")+
    '</div><p class="hint tdnote">'+(by[""]?"Türü seçilmemiş kayıtlara “Ekle / düzenle” sayfasında dokunup tür seçebilirsin. ":"")+'<button type="button" class="vadd" data-tagopen="1" style="padding:0;min-height:0">'+AY[parseKey(k).m]+" kayıtlarını aç</button></p>";
 }
 
