@@ -74,13 +74,25 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .today b{color:var(--band-ink);font-weight:700}
 .salary-btn{background:var(--band-tile);border:0;border-radius:999px;padding:7px 14px;color:var(--band-ink);font-size:.88rem;font-weight:700}
 .salary-btn:hover{filter:brightness(1.04)}
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.kpi .lbl{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.eye{flex:none;border:0;background:rgb(0 0 0 / .12);color:var(--band-ink);width:28px;height:28px;border-radius:999px;display:grid;place-items:center;padding:0;margin:-4px -6px -4px 0}
+.eye:hover{background:rgb(0 0 0 / .22)}
+.eye svg{width:16px;height:16px}.eye .ec{display:none}
+.kpi.masked .eye .eo{display:none}.kpi.masked .eye .ec{display:block}
+.kpi.masked .val{color:transparent!important;position:relative;user-select:none}
+.kpi.masked .val::after{content:"• • • • • •";color:var(--band-ink);position:absolute;left:0;top:0;letter-spacing:.05em}
+.kpi.masked .sub{visibility:hidden}
+.kpi.net{background:var(--band-ink);color:var(--band)}
+.kpi.net .lbl,.kpi.net .sub{color:var(--band)}.kpi.net .lbl{opacity:.9}
+.kpi.net .eye{color:var(--band);background:rgb(255 255 255 / .14)}
+.kpi.net.masked .val::after{color:var(--band)}
 .kpi{background:var(--band-tile);padding:12px 16px;min-width:0;border-radius:var(--r)}
 .kpi .lbl{font-size:.8rem;font-weight:700;color:var(--band-muted)}
 .kpi .val{font-size:1.25rem;font-weight:800;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi .sub{font-size:.8rem;color:var(--band-muted);margin-top:1px;line-height:1.35}
 .kpi .sub b{color:var(--band-ink);font-weight:800;white-space:nowrap}
-.kpi.debt .val{font-size:1.55rem}
+.kpi.debt .val{font-size:1.4rem}
 .kpi-btn{cursor:pointer}.kpi-btn:hover{filter:brightness(1.05)}.kpi-btn:focus-visible{outline:2px solid var(--band-ink);outline-offset:2px}
 .kpi .val.hot{color:var(--band-hot)}
 .period{display:flex;gap:8px;flex-wrap:wrap}
@@ -308,6 +320,7 @@ main .wrap>*,.chart-box{min-width:0}
 
 @media (max-width:820px){
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi.net{grid-column:1/-1}
   .exp-grid{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:640px){
@@ -361,9 +374,10 @@ main .wrap>*,.chart-box{min-width:0}
     </div>
     <div class="period" id="period"></div>
     <div class="kpis">
-      <div class="kpi debt"><div class="lbl">Güncel toplam borç</div><div class="val" id="kDebt">—</div><div class="sub">Kalan tüm ödemeler</div></div>
-      <div class="kpi"><div class="lbl" id="kNowLbl">Bu ay ödenecek</div><div class="val" id="kNow">—</div><div class="sub" id="kNowSub">&nbsp;</div></div>
-      <div class="kpi"><div class="lbl">Aştık biraz</div><div class="val" id="kOver">—</div><div class="sub" id="kOverSub">&nbsp;</div></div>
+      <div class="kpi debt net" data-mask="net"><div class="lbl"><span>Gelecek Toplam Borç – Maaşlı</span><button type="button" class="eye" data-eye="net" aria-label="Tutarı gizle ya da göster" aria-pressed="false"><svg class="eo" viewBox="0 0 20 20" aria-hidden="true"><path d="M1.8 10S5 4.5 10 4.5 18.2 10 18.2 10 15 15.5 10 15.5 1.8 10 1.8 10z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="10" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><svg class="ec" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3l14 14M8.2 5a8.6 8.6 0 0 1 1.8-.2c5 0 8.2 5.2 8.2 5.2a14 14 0 0 1-2.4 3M5.3 6.3A13.8 13.8 0 0 0 1.8 10S5 15.2 10 15.2c1.3 0 2.5-.3 3.5-.8M8.2 8.3a2.6 2.6 0 0 0 3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><div class="val" id="kNet">—</div><div class="sub" id="kNetSub">&nbsp;</div></div>
+      <div class="kpi debt" data-mask="debt"><div class="lbl"><span>Gelecek Toplam Borç</span><button type="button" class="eye" data-eye="debt" aria-label="Tutarı gizle ya da göster" aria-pressed="false"><svg class="eo" viewBox="0 0 20 20" aria-hidden="true"><path d="M1.8 10S5 4.5 10 4.5 18.2 10 18.2 10 15 15.5 10 15.5 1.8 10 1.8 10z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="10" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><svg class="ec" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3l14 14M8.2 5a8.6 8.6 0 0 1 1.8-.2c5 0 8.2 5.2 8.2 5.2a14 14 0 0 1-2.4 3M5.3 6.3A13.8 13.8 0 0 0 1.8 10S5 15.2 10 15.2c1.3 0 2.5-.3 3.5-.8M8.2 8.3a2.6 2.6 0 0 0 3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><div class="val" id="kDebt">—</div><div class="sub">Kalan tüm ödemeler</div></div>
+      <div class="kpi" data-mask="now"><div class="lbl"><span id="kNowLbl">Bu ay ödenecek</span><button type="button" class="eye" data-eye="now" aria-label="Tutarı gizle ya da göster" aria-pressed="false"><svg class="eo" viewBox="0 0 20 20" aria-hidden="true"><path d="M1.8 10S5 4.5 10 4.5 18.2 10 18.2 10 15 15.5 10 15.5 1.8 10 1.8 10z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="10" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><svg class="ec" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3l14 14M8.2 5a8.6 8.6 0 0 1 1.8-.2c5 0 8.2 5.2 8.2 5.2a14 14 0 0 1-2.4 3M5.3 6.3A13.8 13.8 0 0 0 1.8 10S5 15.2 10 15.2c1.3 0 2.5-.3 3.5-.8M8.2 8.3a2.6 2.6 0 0 0 3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><div class="val" id="kNow">—</div><div class="sub" id="kNowSub">&nbsp;</div></div>
+      <div class="kpi" data-mask="over"><div class="lbl"><span>Aştık biraz</span><button type="button" class="eye" data-eye="over" aria-label="Tutarı gizle ya da göster" aria-pressed="false"><svg class="eo" viewBox="0 0 20 20" aria-hidden="true"><path d="M1.8 10S5 4.5 10 4.5 18.2 10 18.2 10 15 15.5 10 15.5 1.8 10 1.8 10z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="10" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><svg class="ec" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3l14 14M8.2 5a8.6 8.6 0 0 1 1.8-.2c5 0 8.2 5.2 8.2 5.2a14 14 0 0 1-2.4 3M5.3 6.3A13.8 13.8 0 0 0 1.8 10S5 15.2 10 15.2c1.3 0 2.5-.3 3.5-.8M8.2 8.3a2.6 2.6 0 0 0 3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><div class="val" id="kOver">—</div><div class="sub" id="kOverSub">&nbsp;</div></div>
       <div class="kpi kpi-btn" id="kFreeBox" role="button" tabindex="0" aria-label="Kurtarma hedef ayını değiştir"><div class="lbl"><span id="kFreeLbl">Hedef ay</span> <svg class="ed" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.1 2.2a1.6 1.6 0 0 1 2.3 0l.4.4a1.6 1.6 0 0 1 0 2.3L6 12.7 2.6 13.4l.7-3.4 7.8-7.8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.6 3.7l2.7 2.7" stroke="currentColor" stroke-width="1.5"/></svg></div><div class="val" id="kFree">—</div><div class="sub" id="kFreeSub">&nbsp;</div></div>
     </div>
   </div>
@@ -651,7 +665,7 @@ function renderHeader(em){
    $("salaryLbl").textContent=tl0(now)+" ₺"+(nx?" → "+tl0(nx.v)+" ₺ ("+AYK[parseKey(nx.k).m]+")":"");}
   if(!S.loaded.plan||!S.loaded.harc)return;
   let debt=0;for(const k of allKeys(em))if(k>=curKey)debt+=totalsFor(k,em).total;
-  $("kDebt").textContent="−"+tl(debt);
+  $("kDebt").textContent=(debt>0.005?"−":"")+tl(debt);
   const st=baseStart(em),t=totalsFor(st,em);
   $("kNowLbl").textContent=AY[parseKey(st).m]+" ödenecek";
   $("kNow").textContent=(t.total>0.005?"−":"")+tl(t.total);
@@ -662,6 +676,8 @@ function renderHeader(em){
   $("kOverSub").textContent=cnt?(cnt===1?"Sadece 1 ay, sonrası rahat":cnt+" ayda biraz üstündeyiz"):"Hiç aşmıyoruz";
   const N=S.ayar.bitisAyi&&S.ayar.bitisAyi>=st?mDiff(st,S.ayar.bitisAyi)+1:12;let pay=0;for(let i=0;i<N;i++)pay+=salaryFor(addM(st,i));
   const rest=pay-debt;
+  $("kNet").textContent=(rest<-0.005?"−":rest>0.005?"+":"")+tl(Math.abs(rest));
+  $("kNetSub").textContent=AY[parseKey(addM(st,N-1)).m]+" "+parseKey(addM(st,N-1)).y+"’ye kadar "+N+" ay maaş ("+tl0(pay)+" ₺) düşüldü";
   const eK=addM(st,N-1);$("kFreeLbl").textContent=AY[parseKey(eK).m]+" "+parseKey(eK).y+"'ye kadar ("+N+" ay)";
   const tz=Number(S.ayar.tazminat)||0,withT=rest+tz;
   const sg=v=>(v>=0?"+":"−")+tl0(Math.abs(v))+" ₺";
@@ -1140,6 +1156,10 @@ function go(view){try{history.replaceState(null,"","#"+view)}catch(e){}show(view
 
 for(let i=1;i<=12;i++){const o=document.createElement("option");o.value=i;o.textContent=i===1?"Tek seferde":i+" taksit";$("fInst").appendChild(o)}
 $("tabPlan").onclick=()=>go("plan");
+{const KEY="finanzee.gizli";let hid=[];try{hid=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){}
+ const apply=()=>document.querySelectorAll("[data-mask]").forEach(el=>{const on=hid.includes(el.dataset.mask);el.classList.toggle("masked",on);const b=el.querySelector(".eye");if(b){b.setAttribute("aria-pressed",on);b.setAttribute("aria-label",on?"Tutarı göster":"Tutarı gizle")}});
+ document.querySelector(".kpis").addEventListener("click",e=>{const b=e.target.closest("[data-eye]");if(!b)return;e.stopPropagation();const k=b.dataset.eye;hid=hid.includes(k)?hid.filter(x=>x!==k):hid.concat(k);try{localStorage.setItem(KEY,JSON.stringify(hid))}catch(err){}apply()});
+ apply();}
 {const openDl=()=>{if(!S.db)return;const cur=S.ayar.bitisAyi||addM(curKey,12);
   openOv("Kurtarma hedefi",'<div class="field"><label for="dlAy">Borçları hangi aya kadar kapatmak istiyorsun?</label><input id="dlAy" type="month" min="'+addM(curKey,1)+'" value="'+cur+'"></div><div class="preview" id="dlPrev"></div><p class="hint">Bu aya kadar alacağın maaşların toplamı, tüm borçlarınla kıyaslanır. Yetiyorsa “Kurtarılır”, yetmiyorsa “Kurtarılmaz” yazar.</p>',async()=>{
    const v=$("dlAy").value;if(!v){toast("Bir ay seç");return false}if(v<curKey){toast("Geçmiş bir ay seçilemez");return false}
