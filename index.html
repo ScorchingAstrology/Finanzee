@@ -1069,7 +1069,7 @@ const sgn0=v=>Math.abs(v)<.5?"0":(v>0?"−":"+")+tl0(Math.abs(v));
 function renderList(em,keys){
   if(!S.selMonth)S.selMonth=keys[0];
   const months=keys.includes(S.selMonth)?keys:[S.selMonth,...keys.slice(0,11)].sort();
-  $("months").innerHTML=months.map(k=>{const t=(em[k]||[]).reduce((s,c)=>s+c.amt,0);const {y,m}=parseKey(k);return '<button type="button" class="mchip" data-m="'+k+'" aria-pressed="'+(k===S.selMonth)+'"><span>'+AYK[m]+" "+y+"</span><b>"+sgn0(t)+" ₺</b></button>"}).join("");
+  $("months").innerHTML=months.map(k=>{const t=(em[k]||[]).filter(passF).reduce((s,c)=>s+c.amt,0);const {y,m}=parseKey(k);return '<button type="button" class="mchip" data-m="'+k+'" aria-pressed="'+(k===S.selMonth)+'"><span>'+AYK[m]+" "+y+"</span><b>"+sgn0(t)+" ₺</b></button>"}).join("");
   $("listTitle").textContent=kLong(S.selMonth)+" işlemleri";
   const allM=em[S.selMonth]||[];fillFilters(allM);
   const fOn=!!(S.fBank||S.fSrc);
