@@ -1,6 +1,27 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Finanzee Ödeme Planı</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Finanzee</title>
+<meta name="theme-color" content="#F37021">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Finanzee">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+.fzfoot{padding-block:0 32px;text-align:center}
+.fzfoot .vadd{color:var(--muted);font-weight:600;font-size:.85rem}
+</style>
+</head>
+<body>
 <style>
 /* Layout: Hermès-orange band on top (date, card period, debt), then a month-by-month grid read left to right; payments are added on their own tab. */
 :root{
@@ -462,6 +483,88 @@ main .wrap>*,.chart-box{min-width:0}
 </div>
 <div class="toast" id="toast" hidden></div>
 
+<script>
+/* ===== Finanzee: Google E-Tablo bağlantısı ===== */
+const FZ_URL="";/* Apps Script Web app adresi buraya */
+const FZ_CFG_KEY="finanzee.baglanti",FZ_CACHE_KEY="finanzee.onbellek";
+function fzLoad(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}
+function fzSave(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+async function fzFetchAll(cfg){
+  const r=await fetch(cfg.url+(cfg.url.includes("?")?"&":"?")+"key="+encodeURIComponent(cfg.key)+"&t="+Date.now(),{redirect:"follow"});
+  const j=await r.json();if(j.error)throw new Error(j.error);return j.docs||{};
+}
+async function fzPost(cfg,ops){
+  const r=await fetch(cfg.url,{method:"POST",body:JSON.stringify({key:cfg.key,ops}),redirect:"follow"});
+  const j=await r.json();if(j.error)throw new Error(j.error);return j;
+}
+function fzSetupScreen(msg){
+  return new Promise(resolve=>{
+    const old=fzLoad(FZ_CFG_KEY)||{};if(FZ_URL)old.url=FZ_URL;
+    const w=document.createElement("div");w.className="overlay";w.style.zIndex=50;
+    w.innerHTML='<form class="sheet" novalidate><h2>Verilerine bağlan</h2><p class="hint">Google E-Tablo’daki Apps Script’in Web app adresini ve kendi belirlediğin anahtarı yaz. Bu bilgiler yalnızca bu cihazda saklanır.</p>'+
+      (msg?'<div class="preview" style="background:var(--bad-soft);color:var(--bad)">'+msg+'</div>':'')+
+      '<div class="field"><label for="fzUrl">Web app adresi</label><input id="fzUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div>'+
+      '<div class="field"><label for="fzKey">Şifre</label><input id="fzKey" type="password" autocomplete="current-password"></div>'+
+      '<div class="btns"><button type="submit" class="btn primary">Bağlan</button></div></form>';
+    document.body.appendChild(w);
+    w.querySelector("#fzUrl").value=old.url||"";if(FZ_URL){w.querySelector("#fzUrl").closest(".field").hidden=true;w.querySelector(".hint").textContent="Şifreni bir kez yaz; bu cihaz seni hatırlayacak."}w.querySelector("#fzKey").value=old.key||"";
+    w.querySelector("form").addEventListener("submit",async e=>{
+      e.preventDefault();const btn=w.querySelector("button");
+      const cfg={url:w.querySelector("#fzUrl").value.trim(),key:w.querySelector("#fzKey").value};
+      if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(cfg.url)){alertIn("Adres https://script.google.com/macros/s/ ile başlamalı ve /exec ile bitmeli.");return}
+      btn.disabled=true;btn.textContent="Bağlanıyor…";
+      try{const docs=await fzFetchAll(cfg);fzSave(FZ_CFG_KEY,cfg);fzSave(FZ_CACHE_KEY,docs);w.remove();resolve({cfg,docs})}
+      catch(err){btn.disabled=false;btn.textContent="Bağlan";alertIn(String(err.message)==="yetki"?"Anahtar yanlış. Kod.gs içindeki ANAHTAR ile aynı olmalı.":"Bağlanılamadı. Adresi ve Web app erişiminin “Anyone” olduğunu kontrol et.")}
+    });
+    function alertIn(t){let p=w.querySelector(".fzerr");if(!p){p=document.createElement("div");p.className="preview fzerr";p.style.cssText="background:var(--bad-soft);color:var(--bad)";w.querySelector(".btns").before(p)}p.textContent=t}
+  });
+}
+async function fzConnect(){
+  let cfg=fzLoad(FZ_CFG_KEY),docs=fzLoad(FZ_CACHE_KEY);if(cfg&&FZ_URL)cfg.url=FZ_URL;
+  if(!cfg){const r=await fzSetupScreen();cfg=r.cfg;docs=r.docs}
+  const db=fzMakeDb(cfg,docs||{});
+  if(docs){db._refresh()}else{try{db._replace(await fzFetchAll(cfg))}catch(e){const r=await fzSetupScreen("Verilere ulaşılamadı, bağlantıyı kontrol et.");cfg=r.cfg;db._cfg(cfg);db._replace(r.docs)}}
+  return db;
+}
+function fzMakeDb(cfg,initial){
+  let docs=JSON.parse(JSON.stringify(initial));
+  const docL=new Map(),colL=new Map();let queue=[],timer=null,busy=false;
+  const colOf=p=>p.split("/").slice(0,-1).join("/");
+  const clone=v=>v===undefined?v:JSON.parse(JSON.stringify(v));
+  const snapDoc=p=>({id:p.split("/").pop(),exists:p in docs,data:()=>clone(docs[p]),metadata:{fromCache:false,hasPendingWrites:false}});
+  const snapCol=c=>{const ds=Object.keys(docs).filter(p=>colOf(p)===c).sort().map(snapDoc);return {docs:ds,size:ds.length,empty:!ds.length,docChanges:()=>[],metadata:{fromCache:false,hasPendingWrites:false}}};
+  const fire=(m,k,v)=>{const s=m.get(k);if(s)s.forEach(f=>{try{f(v)}catch(e){console.error(e)}})};
+  function notify(p){fire(docL,p,snapDoc(p));fire(colL,colOf(p),snapCol(colOf(p)))}
+  function notifyAll(){for(const p of docL.keys())fire(docL,p,snapDoc(p));for(const c of colL.keys())fire(colL,c,snapCol(c))}
+  function persist(){fzSave(FZ_CACHE_KEY,docs)}
+  function enqueue(op){queue=queue.filter(q=>q.path!==op.path);queue.push(op);persist();clearTimeout(timer);timer=setTimeout(flush,400)}
+  async function flush(){
+    if(busy||!queue.length)return;busy=true;const ops=queue;queue=[];
+    try{await fzPost(cfg,ops);fzStatus("")}
+    catch(e){const paths=new Set(queue.map(q=>q.path));queue=ops.filter(o=>!paths.has(o.path)).concat(queue);fzStatus("Kaydedilemedi, internet gelince tekrar denenecek.");clearTimeout(timer);timer=setTimeout(flush,15000)}
+    busy=false;if(queue.length){clearTimeout(timer);timer=setTimeout(flush,400)}
+  }
+  const merge=(a,b)=>{const o=Object.assign({},a);for(const k in b){const v=b[k];if(v&&typeof v==="object"&&!Array.isArray(v)&&o[k]&&typeof o[k]==="object"&&!Array.isArray(o[k]))o[k]=merge(o[k],v);else o[k]=clone(v)}return o};
+  const rid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  function doc(p){return {id:p.split("/").pop(),path:p,
+    get:async()=>snapDoc(p),
+    set:async d=>{docs[p]=clone(d);enqueue({op:"set",path:p,data:docs[p]});notify(p)},
+    update:async d=>{if(!(p in docs))throw {code:"invalid_argument",message:"yok"};docs[p]=merge(docs[p],d);enqueue({op:"set",path:p,data:docs[p]});notify(p)},
+    delete:async()=>{delete docs[p];enqueue({op:"delete",path:p});notify(p)},
+    onSnapshot:(f)=>{if(!docL.has(p))docL.set(p,new Set());docL.get(p).add(f);setTimeout(()=>f(snapDoc(p)),0);return()=>docL.get(p).delete(f)},
+    collection:c=>collection(p+"/"+c)}}
+  function collection(c){return {path:c,doc:id=>doc(c+"/"+(id||rid())),
+    add:async d=>{const r=doc(c+"/"+rid());await r.set(d);return r},
+    get:async()=>snapCol(c),
+    onSnapshot:(f)=>{if(!colL.has(c))colL.set(c,new Set());colL.get(c).add(f);setTimeout(()=>f(snapCol(c)),0);return()=>colL.get(c).delete(f)},
+    where(){return this},orderBy(){return this},limit(){return this}}}
+  async function refresh(){if(queue.length||busy)return;try{const d=await fzFetchAll(cfg);if(queue.length||busy)return;if(JSON.stringify(d)!==JSON.stringify(docs)){docs=d;persist();notifyAll()}fzStatus("")}catch(e){fzStatus("Çevrimdışı: son kaydedilen veriler gösteriliyor.")}}
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refresh();else flush()});
+  setInterval(()=>{if(document.visibilityState==="visible")refresh()},60000);
+  return {doc,collection,_refresh:refresh,_replace:d=>{docs=d;persist();notifyAll()},_cfg:c=>{cfg=c}};
+}
+function fzStatus(t){let el=document.getElementById("fzStatus");if(!el){el=document.createElement("div");el.id="fzStatus";el.className="toast";document.body.appendChild(el)}el.textContent=t;el.hidden=!t}
+</script>
 <script>
 (function(){
 const AY=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
@@ -966,7 +1069,7 @@ const sgn0=v=>Math.abs(v)<.5?"0":(v>0?"−":"+")+tl0(Math.abs(v));
 function renderList(em,keys){
   if(!S.selMonth)S.selMonth=keys[0];
   const months=keys.includes(S.selMonth)?keys:[S.selMonth,...keys.slice(0,11)].sort();
-  $("months").innerHTML=months.map(k=>{const t=(em[k]||[]).filter(passF).reduce((s,c)=>s+c.amt,0);const {y,m}=parseKey(k);return '<button type="button" class="mchip" data-m="'+k+'" aria-pressed="'+(k===S.selMonth)+'"><span>'+AYK[m]+" "+y+"</span><b>"+sgn0(t)+" ₺</b></button>"}).join("");
+  $("months").innerHTML=months.map(k=>{const t=(em[k]||[]).reduce((s,c)=>s+c.amt,0);const {y,m}=parseKey(k);return '<button type="button" class="mchip" data-m="'+k+'" aria-pressed="'+(k===S.selMonth)+'"><span>'+AYK[m]+" "+y+"</span><b>"+sgn0(t)+" ₺</b></button>"}).join("");
   $("listTitle").textContent=kLong(S.selMonth)+" işlemleri";
   const allM=em[S.selMonth]||[];fillFilters(allM);
   const fOn=!!(S.fBank||S.fSrc);
@@ -1100,7 +1203,7 @@ let rT;window.addEventListener("resize",()=>{clearTimeout(rT);rT=setTimeout(rend
 
 fillTargets();resetForm();show(location.hash==="#odemeler"||location.hash==="#harcamalar"?"odemeler":location.hash==="#varliklar"?"varliklar":"plan");render();
 (async()=>{
-  const db=window.claude&&window.claude.use?await window.claude.use("db"):null;
+  const db=await fzConnect();
   if(!db){$("tblWrap").innerHTML='<div class="state">Plan verileri bu görünümde açılamadı. Sayfayı claude.ai üzerinden, oturum açıkken aç.</div>';$("list").innerHTML='<div class="list"><div class="state">Ödemeler bu görünümde açılamadı.</div></div>';$("cards").innerHTML='<div class="mcard"><div class="state">Plan verileri bu görünümde açılamadı.</div></div>';return}
   S.db=db;
   db.doc("ayarlar/genel").onSnapshot(s=>{if(s.exists){const v=s.data();S.ayar={maas:Number(v.maas)||83000,kesimGunu:Number(v.kesimGunu)||2,zamAyi:v.zamAyi||"",zamOrani:Number(v.zamOrani)||0,zamliMaas:Number(v.zamliMaas)||0,bitisAyi:v.bitisAyi||"",tazminat:Number(v.tazminat)||0,etiketler:Array.isArray(v.etiketler)?v.etiketler:[]}}syncTarget();if($("fTag").value!=="__new")fillTags($("fTag").value);render()},()=>{});
@@ -1115,4 +1218,7 @@ fillTargets();resetForm();show(location.hash==="#odemeler"||location.hash==="#ha
 })();
 </script>
 
-</body></html>
+<footer class="wrap fzfoot"><button type="button" class="vadd" id="fzReset">Veri bağlantısını değiştir</button></footer>
+<script>document.getElementById("fzReset").onclick=()=>{try{localStorage.removeItem("finanzee.baglanti")}catch(e){}location.reload()};</script>
+</body>
+</html>
