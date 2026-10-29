@@ -603,12 +603,23 @@ const curKey=key(today.getFullYear(),today.getMonth());
 const tgt=h=>h.hedef||"kart";
 /* salary plan: entries {ay, tutar | oran}; each applies from its month on, a raise % applies to the level before it */
 const salEntries=()=>S.maaslar.slice().sort((a,b)=>a.ay<b.ay?-1:a.ay>b.ay?1:0);
+/* gross → net (Turkish payroll, approx.): SGK %14 + işsizlik %1, cumulative income tax brackets,
+   minimum-wage tax and stamp exemptions. 2026 figures; later years scaled by an assumed yearly increase. */
+const VERGI={yil:2026,dilim:[190000,400000,1500000,5300000],oran:[.15,.20,.27,.35,.40],asgari:33030,artis:{2027:28.4,2028:21,2029:16},sonra:16};
+function vergiKat(y){let f=1;for(let i=VERGI.yil+1;i<=y;i++)f*=1+((VERGI.artis[i]??VERGI.sonra)/100);for(let i=VERGI.yil;i>y;i--)f/=1+((VERGI.artis[i]??VERGI.sonra)/100);return f}
+function gvTax(x,f){let t=0,prev=0;const lim=VERGI.dilim.map(v=>v*f).concat(Infinity);for(let i=0;i<lim.length;i++){if(x>prev)t+=(Math.min(x,lim[i])-prev)*VERGI.oran[i];prev=lim[i]}return t}
+function netFromGross(y,gs){const f=vergiKat(y),asg=VERGI.asgari*f,tav=asg*7.5,a=asg*.85;let cum=0,net=0;
+  gs.forEach((g,i)=>{const sgk=Math.min(g,tav)*.15,mat=g-sgk,tax=gvTax(cum+mat,f)-gvTax(cum,f);cum+=mat;const ex=gvTax(a*(i+1),f)-gvTax(a*i,f);net=g-sgk-Math.max(0,tax-ex)-Math.max(0,g-asg)*.00759});return net}
+function salState(k){let st=null;for(const e of salEntries()){if(e.ay>k&&st)break;const t=Number(e.tutar)||0,b=Number(e.brut)||0,o=Number(e.oran)||0;
+  if(b>0)st={mode:"brut",v:b};else if(t>0)st={mode:"net",v:t};else if(o&&st)st={mode:st.mode,v:st.v*(1+o/100)};else if(!st)st={mode:"net",v:S.ayar.maas*(o?1+o/100:1)};if(e.ay>k)break}
+  return st||{mode:"net",v:S.ayar.maas}}
 function salaryFor(k){
-  const es=salEntries();
-  if(!es.length){const z=S.ayar.zamOrani>0?S.ayar.maas*(1+S.ayar.zamOrani/100):(S.ayar.zamliMaas||0);return S.ayar.zamAyi&&z&&k>=S.ayar.zamAyi?z:S.ayar.maas}
-  let v=null;for(const e of es){if(e.ay>k&&v!==null)break;const t=Number(e.tutar)||0,o=Number(e.oran)||0;if(t>0)v=t;else if(o&&v!==null)v=v*(1+o/100);else if(v===null)v=S.ayar.maas*(o?1+o/100:1);if(e.ay>k)break}
-  return Math.round((v??S.ayar.maas)*100)/100;
+  if(!S.maaslar.length){const z=S.ayar.zamOrani>0?S.ayar.maas*(1+S.ayar.zamOrani/100):(S.ayar.zamliMaas||0);return S.ayar.zamAyi&&z&&k>=S.ayar.zamAyi?z:S.ayar.maas}
+  const s=salState(k);if(s.mode==="net")return Math.round(s.v*100)/100;
+  const {y,m}=parseKey(k),gs=[];for(let i=0;i<=m;i++){const x=salState(key(y,i));gs.push(x.mode==="brut"?x.v:s.v)}
+  return Math.round(netFromGross(y,gs)*100)/100;
 }
+const grossAt=k=>{const s=salState(k);return s.mode==="brut"?s.v:0};
 function salLevelAt(e){return salaryFor(e.ay)}
 const mDiff=(a,b)=>{const x=parseKey(a),y=parseKey(b);return (y.y*12+y.m)-(x.y*12+x.m)};
 function fixedRows(){return (S.plan&&S.plan.satirlar)||[]}
@@ -661,7 +672,7 @@ function renderHeader(em){
   const left=Math.round((nextCut-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);
   const pd=x=>x.getDate()+" "+AYK[x.getMonth()];
   $("period").innerHTML='<button type="button" class="chip chip-btn" id="periodBtn" aria-label="Kart dönemini değiştir">Kart dönemi <b>'+pd(ps)+" – "+pd(pe)+'</b> <svg class="ed" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.1 2.2a1.6 1.6 0 0 1 2.3 0l.4.4a1.6 1.6 0 0 1 0 2.3L6 12.7 2.6 13.4l.7-3.4 7.8-7.8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.6 3.7l2.7 2.7" stroke="currentColor" stroke-width="1.5"/></svg></button><span class="chip">Hesap kesimine <b>'+left+" gün</b></span>"+'<span class="chip c3">Bu dönem <b>'+AY[parseKey(payK).m]+"</b> ekstresine yazılıyor</span>";
-  {const now=salaryFor(curKey);let nx=null;for(let i=1;i<=24;i++){const k=addM(curKey,i);const v=salaryFor(k);if(Math.abs(v-now)>.5){nx={k,v};break}}
+  {const now=salaryFor(curKey);let nx=null;for(let i=1;i<=24;i++){const k=addM(curKey,i);const v=salaryFor(k);if(Math.abs(v-now)>Math.max(.5,now*.08)){nx={k,v};break}}
    $("salaryLbl").textContent=tl0(now)+" ₺"+(nx?" → "+tl0(nx.v)+" ₺ ("+AYK[parseKey(nx.k).m]+")":"");}
   if(!S.loaded.plan||!S.loaded.harc)return;
   let debt=0;for(const k of allKeys(em))if(k>=curKey)debt+=totalsFor(k,em).total;
@@ -705,8 +716,8 @@ function renderChart(em,keys){
   });
   let pth="";keys.forEach((k,i)=>{const x0=pad.l+i*bw,x1=x0+bw,yy=y(sal[i]);pth+=(i?"L":"M")+x0+" "+yy+"L"+x1+" "+yy});
   s+='<path d="'+pth+'" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="5 4"/>';
-  sal.forEach((v,i)=>{if(i>0&&v===sal[i-1])return;const first=i===0;
-    s+='<text x="'+(pad.l+i*bw+3)+'" y="'+(y(v)-6)+'" text-anchor="start" font-size="'+fs+'" fill="var(--ink)" font-weight="800" stroke="var(--surface)" stroke-width="3" paint-order="stroke">'+(first?"Maaş ":"Zamlı ")+tl0(v)+" ₺</text>"});
+  sal.forEach((v,i)=>{if(i>0&&(Math.abs(v-sal[i-1])<1||parseKey(keys[i]).m!==0))return;const first=i===0;
+    s+='<text x="'+(pad.l+i*bw+3)+'" y="'+(y(v)-6)+'" text-anchor="start" font-size="'+fs+'" fill="var(--ink)" font-weight="800" stroke="var(--surface)" stroke-width="3" paint-order="stroke">'+(first?"Maaş ":"Oca ")+tl0(v)+" ₺</text>"});
   s+="</svg>";
   const z=sal.find(v=>v!==sal[0]);$("salLegend").textContent="Maaş: şu an "+tl0(sal[0])+" ₺"+(z?" · "+AYK[parseKey(keys[sal.indexOf(z)]).m]+"'dan "+tl0(z)+" ₺":"");
   box.innerHTML=s;
@@ -933,9 +944,9 @@ async function deleteRows(ids,bank){
 /* salary plan editor */
 function openSettings(){
   const es=salEntries();
-  const rows=es.length?es.map(e=>{const lvl=salLevelAt(e),o=Number(e.oran)||0,t=Number(e.tutar)||0;
-    return '<button type="button" class="vrow" data-sal="'+e.id+'"><span class="vn"><span>'+AY[parseKey(e.ay).m]+" "+parseKey(e.ay).y+"’dan itibaren</span><small>"+(t>0?"Net tutar":"%"+String(o).replace(".",",")+" zam")+(e.not?" · "+esc(e.not):"")+'</small></span><span class="vv">'+tl0(lvl)+" ₺</span></button>"}).join(""):'<div class="state">Henüz maaş bilgisi yok.</div>';
-  openOv("Maaş ve ayarlar",'<div class="field"><span class="lab">Maaş bilgilerim</span><div class="list">'+rows+'<button type="button" class="vadd" id="salAdd">+ Yeni maaş bilgisi ekle</button></div><small class="hint">Her bilgi, başlangıç ayından itibaren geçerli. Bir sonraki bilgi gelene kadar o maaş kullanılır.</small></div>'+
+  const rows=es.length?es.map(e=>{const lvl=salLevelAt(e),o=Number(e.oran)||0,t=Number(e.tutar)||0,bg=Number(e.brut)||0,gr=grossAt(e.ay);
+    return '<button type="button" class="vrow" data-sal="'+e.id+'"><span class="vn"><span>'+AY[parseKey(e.ay).m]+" "+parseKey(e.ay).y+"’dan itibaren</span><small>"+(bg>0?"Brüt "+tl0(bg)+" ₺":t>0?"Net tutar":"%"+String(o).replace(".",",")+" zam"+(gr?" · brüt "+tl0(gr)+" ₺":""))+(e.not?" · "+esc(e.not):"")+'</small></span><span class="vv">'+tl0(lvl)+" ₺</span></button>"}).join(""):'<div class="state">Henüz maaş bilgisi yok.</div>';
+  openOv("Maaş ve ayarlar",'<div class="field"><span class="lab">Maaş bilgilerim</span><div class="list">'+rows+'<button type="button" class="vadd" id="salAdd">+ Yeni maaş bilgisi ekle</button></div><small class="hint">Her bilgi, başlangıç ayından itibaren geçerli. Brüt girersen net maaş, vergi dilimine göre her ay ayrı hesaplanır (yıl içinde düşer). Sağdaki tutar o ayın neti.</small></div>'+
    '<div class="field"><label for="ovTaz">Tahmini net tazminat (₺)</label><input id="ovTaz" type="text" inputmode="decimal" value="'+(S.ayar.tazminat?fmt2.format(S.ayar.tazminat):"")+'"></div>'+
    '<div class="field"><label for="ovBitis">Kurtarma dönemi sonu</label><input id="ovBitis" type="month" value="'+(S.ayar.bitisAyi||"")+'"></div>',async()=>{
     const bt=$("ovBitis").value,tr=$("ovTaz").value.trim(),tzv=tr?parseAmt(tr):0;
@@ -945,27 +956,29 @@ function openSettings(){
 }
 function editSalary(e){
   const isNew=!e;e=e||{ay:addM(curKey,1),tutar:0,oran:0,not:""};
-  let mode=Number(e.oran)&&!Number(e.tutar)?"oran":"tutar";
+  let mode=Number(e.brut)?"brut":Number(e.oran)&&!Number(e.tutar)?"oran":"tutar";
   openOv(isNew?"Yeni maaş bilgisi":"Maaş bilgisini düzenle",
    '<div class="field"><label for="sAy">Hangi aydan itibaren</label><input id="sAy" type="month" value="'+e.ay+'"></div>'+
-   '<div class="field"><span class="lab">Nasıl gireceksin?</span><div class="seg" role="group"><button type="button" id="sT" aria-pressed="'+(mode==="tutar")+'">Net tutar</button><button type="button" id="sO" aria-pressed="'+(mode==="oran")+'">Zam oranı (%)</button></div></div>'+
-   '<div class="field"><label for="sVal" id="sValL"></label><input id="sVal" type="text" inputmode="decimal" value="'+(mode==="oran"?String(e.oran||"").replace(".",","):(Number(e.tutar)?fmt2.format(e.tutar):""))+'"></div>'+
+   '<div class="field"><span class="lab">Nasıl gireceksin?</span><div class="seg" role="group" style="grid-template-columns:repeat(3,1fr)"><button type="button" id="sB" aria-pressed="'+(mode==="brut")+'">Brüt</button><button type="button" id="sT" aria-pressed="'+(mode==="tutar")+'">Net</button><button type="button" id="sO" aria-pressed="'+(mode==="oran")+'">Zam %</button></div></div>'+
+   '<div class="field"><label for="sVal" id="sValL"></label><input id="sVal" type="text" inputmode="decimal" value="'+(mode==="oran"?String(e.oran||"").replace(".",","):mode==="brut"?fmt2.format(e.brut):(Number(e.tutar)?fmt2.format(e.tutar):""))+'"></div>'+
    '<div class="preview" id="sPrev"></div>'+
    '<div class="field"><label for="sNot">Not (isteğe bağlı)</label><input id="sNot" type="text" maxlength="60" placeholder="Örn. Ocak zammı, yeni iş" value="'+esc(e.not||"")+'"></div>'+
    (isNew?"":'<button type="button" class="clear" id="sDel">Bu maaş bilgisini sil</button>'),
    async()=>{
     const ay=$("sAy").value,v=parseAmt($("sVal").value),not=$("sNot").value.trim();
     if(!ay){toast("Başlangıç ayını seç");return false}
-    if(!isFinite(v)||(mode==="tutar"&&v<=0)){toast(mode==="tutar"?"Net maaşı sayı olarak yaz":"Zam oranını sayı olarak yaz, örn. 28,4");return false}
+    if(!isFinite(v)||(mode!=="oran"&&v<=0)){toast(mode==="oran"?"Zam oranını sayı olarak yaz, örn. 28,4":"Maaşı sayı olarak yaz");return false}
     if(S.maaslar.some(x=>x.ay===ay&&x.id!==e.id)){toast("Bu ay için zaten bir maaş bilgisi var");return false}
-    const body={ay,tutar:mode==="tutar"?v:0,oran:mode==="oran"?v:0,not};
+    const body={ay,tutar:mode==="tutar"?v:0,brut:mode==="brut"?v:0,oran:mode==="oran"?v:0,not};
     if(isNew)await S.db.collection("maaslar").add(body);else await S.db.doc("maaslar/"+e.id).set(body);
     toast("Maaş bilgisi kaydedildi");setTimeout(openSettings,60);return true});
   const prevLevel=()=>{const ay=$("sAy").value||e.ay;const others=S.maaslar.filter(x=>x.id!==e.id&&x.ay<ay);if(!others.length)return S.ayar.maas;const keep=S.maaslar;S.maaslar=others;const v=salaryFor(ay);S.maaslar=keep;return v};
-  const upd=()=>{$("sT").setAttribute("aria-pressed",mode==="tutar");$("sO").setAttribute("aria-pressed",mode==="oran");$("sValL").textContent=mode==="tutar"?"Aylık net maaş (₺)":"Zam oranı (%)";
+  const upd=()=>{$("sB").setAttribute("aria-pressed",mode==="brut");$("sT").setAttribute("aria-pressed",mode==="tutar");$("sO").setAttribute("aria-pressed",mode==="oran");$("sValL").textContent=mode==="tutar"?"Aylık net maaş (₺)":mode==="brut"?"Aylık brüt maaş (₺)":"Zam oranı (%)";
     const v=parseAmt($("sVal").value),p=prevLevel();
+    if(mode==="brut"){const ay=$("sAy").value||e.ay,y=parseKey(ay).y;if(!isFinite(v)||v<=0){$("sPrev").textContent="Bordrondaki ya da SGK hizmet dökümündeki brüt tutarı yaz.";return}
+      const ns=[];for(let i=0;i<12;i++)ns.push(netFromGross(y,Array(i+1).fill(v)));$("sPrev").textContent=y+" için tahmini net: Ocak "+tl0(ns[0])+" ₺ → Temmuz "+tl0(ns[6])+" ₺ → Aralık "+tl0(ns[11])+" ₺";return}
     $("sPrev").textContent=mode==="oran"?(isFinite(v)?"Önceki maaş "+tl0(p)+" ₺ → yeni maaş ≈ "+tl(p*(1+v/100)):"Önceki maaş "+tl0(p)+" ₺. Oranı yazınca yeni maaş burada çıkar."):(isFinite(v)&&p?"Öncekine göre "+(v>=p?"+":"−")+"%"+fmt0.format(Math.abs(v/p-1)*100)+" ("+(v>=p?"+":"−")+tl0(Math.abs(v-p))+" ₺)":"Ele geçen net maaşını yaz.")};
-  $("sT").onclick=()=>{mode="tutar";$("sVal").value="";upd()};$("sO").onclick=()=>{mode="oran";$("sVal").value="";upd()};
+  $("sT").onclick=()=>{mode="tutar";$("sVal").value="";upd()};$("sB").onclick=()=>{mode="brut";$("sVal").value="";upd()};$("sO").onclick=()=>{mode="oran";$("sVal").value="";upd()};
   $("sVal").addEventListener("input",upd);$("sAy").addEventListener("input",upd);upd();
   $("ovCancel").onclick=()=>{closeOv();$("ovCancel").onclick=closeOv;setTimeout(openSettings,60)};
   const del=$("sDel");if(del)del.onclick=async()=>{if(!arm(del,"Emin misin? Tekrar dokun"))return;try{await S.db.doc("maaslar/"+e.id).delete();toast("Silindi");closeOv();setTimeout(openSettings,60)}catch(err){writeErr(err)}};
