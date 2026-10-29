@@ -131,6 +131,7 @@ th:first-child,td:first-child{position:sticky;left:0;background:var(--surface);t
 thead th{font-weight:700;color:var(--muted);font-size:.8rem;background:var(--surface)}
 thead th .yr{display:block;font-size:.7rem;font-weight:600;opacity:.75}
 thead th.cur{color:var(--accent)}
+thead th.ny{border-left:2px solid var(--line)}
 .rlabel{display:flex;flex-direction:column;line-height:1.25;font-weight:700}
 .rlabel small{color:var(--muted);font-size:.74rem;font-weight:600}
 tr.salary td{color:var(--muted)}
@@ -728,7 +729,7 @@ function short(v){return v>=1e6?fmt0.format(v/1e6)+" mn":v>=1e3?fmt0.format(v/1e
 /* table */
 function renderTable(em,keys){
   const rows=fixedRows();const sal=keys.map(salaryFor),salSum=sal.reduce((a,b)=>a+b,0);
-  const head='<thead><tr><th>Kalem</th>'+keys.map(k=>{const {y,m}=parseKey(k);return '<th class="'+(k===curKey?"cur":"")+'">'+AYK[m]+'<span class="yr">'+y+"</span></th>"}).join("")+"<th>12 ay</th></tr></thead>";
+  const head='<thead><tr><th>Kalem</th>'+keys.map(k=>{const {y,m}=parseKey(k);return '<th class="'+(k===curKey?"cur":"")+(m===0?" ny":"")+'">'+AYK[m]+'<span class="yr">'+y+"</span></th>"}).join("")+"<th>"+(keys.length===12?"12 ay":"Toplam<span class=\"yr\">"+keys.length+" ay</span>")+"</th></tr></thead>";
   const cell=(v,k,extra)=>{const z=Math.abs(v)<.005;return '<td class="'+(z?"zero":"")+'" title="'+tl(v)+'"><button type="button" class="cell-btn" data-k="'+k+'">'+(z?"–":tl0(v))+(extra?'<span class="plus">'+extra+"</span>":"")+"</button></td>"};
   const T=keys.map(k=>totalsFor(k,em));
   let b="<tbody>";
@@ -758,7 +759,8 @@ function render(){
   if(!S.loaded.plan||!S.loaded.harc)return;
   const keys=windowKeys(em);
   $("rangeLbl").textContent=AYK[parseKey(keys[0]).m]+" "+parseKey(keys[0]).y+" – "+AYK[parseKey(keys[11]).m]+" "+parseKey(keys[11]).y;
-  renderDaily(em);renderChart(em,keys);renderTable(em,keys);renderCards(em,keys);renderBanks(em);renderTags(em,keys);renderList(em,keys);
+  const tk=keys.slice();const end=S.ayar.bitisAyi;if(end&&end>tk[tk.length-1])for(let k=addM(tk[tk.length-1],1);k<=end;k=addM(k,1))tk.push(k);
+  renderDaily(em);renderChart(em,keys);renderTable(em,tk);renderCards(em,tk);renderBanks(em);renderTags(em,keys);renderList(em,keys);
 }
 
 /* daily debt */
