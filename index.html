@@ -281,6 +281,9 @@ main .wrap>*,.chart-box{min-width:0}
 .tag.pay{background:var(--virt-soft);color:var(--virt)}
 .item .a.ref,.list-foot .num.ref{color:var(--virt)}
 #kOde[aria-pressed="true"]{background:var(--virt);color:var(--on-virt)}
+.dayh{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 16px;background:var(--bg);border-bottom:1px solid var(--line);font-size:.84rem;font-weight:800;color:var(--muted)}
+.dayh small{font-weight:600;margin-left:8px}
+.dayh b{color:var(--ink);font-variant-numeric:tabular-nums}.dayh b.ref{color:var(--virt)}
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .filters select{padding:8px 10px}
 
@@ -1097,6 +1100,7 @@ function fillFilters(all){
   $("flSrc").innerHTML='<option value="">Tüm kaynaklar</option>'+srcs.map(k=>'<option value="'+k+'">'+SRC_LBL[k]+"</option>").join("");
   $("flBank").value=S.fBank||"";$("flSrc").value=S.fSrc||"";
 }
+function dayHead(t,v,n){const [y,m,d]=t.split("-").map(Number);const dt=new Date(y,m-1,d);return '<div class="dayh"><span>'+d+' '+AY[m-1]+' '+y+' · '+GUN[dt.getDay()]+'<small>'+n+' işlem</small></span><b class="'+(v<0?'ref':'')+'">'+sgn2(v)+'</b></div>'}
 const sgn2=v=>Math.abs(v)<.005?tl(0):(v>0?"−":"+")+tl(Math.abs(v));
 const sgn0=v=>Math.abs(v)<.5?"0":(v>0?"−":"+")+tl0(Math.abs(v));
 function renderList(em,keys){
@@ -1109,12 +1113,13 @@ function renderList(em,keys){
   const items=allM.filter(passF).sort((a,b)=>a.h.tarih<b.h.tarih?1:a.h.tarih>b.h.tarih?-1:(a.h.id<b.h.id?1:-1));
   if(!items.length){$("list").innerHTML='<div class="list"><div class="state">'+(fOn&&allM.length?"Bu filtreye uyan kayıt yok. "+'<button type="button" class="vadd" data-fclear="1" style="padding:0;min-height:0">Filtreyi temizle</button>':"Bu aya eklenmiş harcama ya da ödeme yok. Formdan ekleyebilirsin.")+"</div></div>";return}
   const by={};let tot=0;
-  const html=items.map(c=>{const h=c.h;const [,m,d]=h.tarih.split("-");const sk=(bankOf(c)?bankOf(c)+" ":"")+SRC_LBL[srcOf(c)];by[sk]=(by[sk]||0)+c.amt;tot+=c.amt;const n=h.taksit||1;
+  const dayTot={};for(const c of items)dayTot[c.h.tarih]=(dayTot[c.h.tarih]||0)+c.amt;let lastDay="";
+  const html=items.map(c=>{const h=c.h;const dh=h.tarih!==lastDay?(lastDay=h.tarih,dayHead(h.tarih,dayTot[h.tarih],items.filter(x=>x.h.tarih===h.tarih).length)):"";const [,m,d]=h.tarih.split("-");const sk=(bankOf(c)?bankOf(c)+" ":"")+SRC_LBL[srcOf(c)];by[sk]=(by[sk]||0)+c.amt;tot+=c.amt;const n=h.taksit||1;
     const rr=rowOf(c.t),tp=rr?tipOf(rr):(c.t==="kart"?"kart":"diger");
     const tcls=tp==="kart"?(h.kart==="sanal"?"sanal":""):tp==="avans"?"avans":tp==="taksitli"?"avans":tp==="kredi"?"kredi":tp==="hesap"?"hesap":"acc";
     const tlab=tp==="kart"?(h.islem==="odeme"?"Kredi kartı":h.kart==="sanal"?"Sanal kart":"Ana kart"):tp==="diger"?(rr?rr.ad:"Hesap"):BTYPES[tp];
     const tag=(h.islem==="odeme"?'<span class="tag pay">Ödeme</span>':"")+(rr&&rr.banka?'<span class="tag bank">'+esc(rr.banka)+"</span>":"")+'<span class="tag '+tcls+'">'+esc(tlab)+"</span>";
-    return '<button type="button" class="item'+(S.editId===h.id?" sel":"")+'" data-id="'+h.id+'"><span class="d">'+d+"."+m+'</span><span class="t"><div>'+esc(h.aciklama||(h.islem==="odeme"?"Ödeme":"Harcama"))+'</div><span class="tags">'+tag+(h.etiket?'<span class="tag cat">'+esc(h.etiket)+"</span>":"")+"</span><small>"+(h.islem==="odeme"?"Borçtan düştü":n>1?(c.i+1)+"/"+n+" taksit · toplam "+tl0(h.tutar)+" ₺":"Tek seferde")+'</small></span><span class="a'+(c.amt<0?" ref":"")+'">'+sgn2(c.amt)+"</span></button>"}).join("");
+    return dh+'<button type="button" class="item'+(S.editId===h.id?" sel":"")+'" data-id="'+h.id+'"><span class="d">'+d+"."+m+'</span><span class="t"><div>'+esc(h.aciklama||(h.islem==="odeme"?"Ödeme":"Harcama"))+'</div><span class="tags">'+tag+(h.etiket?'<span class="tag cat">'+esc(h.etiket)+"</span>":"")+"</span><small>"+(h.islem==="odeme"?"Borçtan düştü":n>1?(c.i+1)+"/"+n+" taksit · toplam "+tl0(h.tutar)+" ₺":"Tek seferde")+'</small></span><span class="a'+(c.amt<0?" ref":"")+'">'+sgn2(c.amt)+"</span></button>"}).join("");
   const split=Object.keys(by).map(t=>"<span>"+esc(t)+" "+sgn0(by[t])+" ₺</span>").join("");
   $("list").innerHTML='<div class="list">'+html+'<div class="list-foot main"><span>'+(fOn?"Filtrelenenlerin toplamı ("+items.length+" kayıt)":"Eklenenlerin toplamı")+'</span><span class="num'+(tot<0?" ref":"")+'">'+sgn2(tot)+'</span></div><div class="list-foot split">'+split+'</div><div class="list-foot"><button type="button" class="clear" data-clearall="1">'+(fOn?"Filtredeki "+items.length+" satırı sil":AY[parseKey(S.selMonth).m]+" ayındaki tüm satırları sil")+"</button></div></div>";
 }
