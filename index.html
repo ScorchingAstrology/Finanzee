@@ -284,6 +284,9 @@ main .wrap>*,.chart-box{min-width:0}
 .dayh{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 16px;background:var(--bg);border-bottom:1px solid var(--line);font-size:.84rem;font-weight:800;color:var(--muted)}
 .dayh small{font-weight:600;margin-left:8px}
 .dayh b{color:var(--ink);font-variant-numeric:tabular-nums}.dayh b.ref{color:var(--virt)}
+.crow{display:grid;grid-template-columns:minmax(0,1fr) auto 32px;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line)}
+.crow:last-child{border-bottom:0}
+.crow b{font-variant-numeric:tabular-nums}.crow b.ref{color:var(--virt)}
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .filters select{padding:8px 10px}
 
@@ -427,7 +430,7 @@ main .wrap>*,.chart-box{min-width:0}
     </div>
     <div class="tbl-wrap" id="tblWrap"><div class="state">Plan yükleniyor…</div></div>
     <div class="mcards" id="cards"><div class="mcard"><div class="state">Plan yükleniyor…</div></div></div>
-    <p class="hint">Bir aya dokununca o ayın ödemeleri açılır. Yeni ödeme ya da harcama eklemek için “Ödeme ya da harcama ekle / düzenle” sekmesini kullan.</p>
+    <p class="hint">Tablodaki bir rakama dokununca o kalemin o ayki tutarını düzenleyebilir, işlemlerini tek tek ya da tamamen silebilirsin.</p>
 
     <div class="sec-head">
       <div>
@@ -735,7 +738,7 @@ function short(v){return v>=1e6?fmt0.format(v/1e6)+" mn":v>=1e3?fmt0.format(v/1e
 function renderTable(em,keys){
   const rows=fixedRows();const sal=keys.map(salaryFor),salSum=sal.reduce((a,b)=>a+b,0);
   const head='<thead><tr><th>Kalem</th>'+keys.map(k=>{const {y,m}=parseKey(k);return '<th class="'+(k===curKey?"cur":"")+(m===0?" ny":"")+'">'+AYK[m]+'<span class="yr">'+y+"</span></th>"}).join("")+"<th>"+(keys.length===12?"12 ay":"Toplam<span class=\"yr\">"+keys.length+" ay</span>")+"</th></tr></thead>";
-  const cell=(v,k,extra)=>{const z=Math.abs(v)<.005;return '<td class="'+(z?"zero":"")+'" title="'+tl(v)+'"><button type="button" class="cell-btn" data-k="'+k+'">'+(z?"–":tl0(v))+(extra?'<span class="plus">'+extra+"</span>":"")+"</button></td>"};
+  const cell=(v,k,extra,rid)=>{const z=Math.abs(v)<.005;return '<td class="'+(z?"zero":"")+'" title="'+tl(v)+'"><button type="button" class="cell-btn" data-k="'+k+'"'+(rid?' data-r="'+rid+'"':'')+'>'+(z?"–":tl0(v))+(extra?'<span class="plus">'+extra+"</span>":"")+"</button></td>"};
   const T=keys.map(k=>totalsFor(k,em));
   let b="<tbody>";
   b+='<tr class="salary"><td><div class="rlabel">Maaş<small>maaş planına göre</small></div></td>'+sal.map(v=>"<td>"+tl0(v)+"</td>").join("")+'<td class="sum">'+tl0(salSum)+"</td></tr>";
@@ -749,7 +752,7 @@ function renderTable(em,keys){
     b+='<tr class="group"><td>'+esc(g)+'</td><td colspan="'+(keys.length+1)+'"></td></tr>';
     for(const r of groups[g]){
       const vs=keys.map(k=>rowAmt(r,k,em));
-      b+='<tr><td><div class="rlabel">'+esc(r.ad)+(tipOf(r)==="avans"&&faizRate(r)?"<small>günlük faiz dahil · %"+String(faizRate(r)).replace(".",",")+"/ay</small>":r.not?"<small>"+esc(r.not)+"</small>":"")+"</div></td>"+vs.map((v,i)=>cell(v,keys[i])).join("")+'<td class="sum">'+tl0(vs.reduce((a,c)=>a+c,0))+"</td></tr>";
+      b+='<tr><td><div class="rlabel">'+esc(r.ad)+(tipOf(r)==="avans"&&faizRate(r)?"<small>günlük faiz dahil · %"+String(faizRate(r)).replace(".",",")+"/ay</small>":r.not?"<small>"+esc(r.not)+"</small>":"")+"</div></td>"+vs.map((v,i)=>cell(v,keys[i],"",r.id)).join("")+'<td class="sum">'+tl0(vs.reduce((a,c)=>a+c,0))+"</td></tr>";
     }
   }
   b+="</tbody>";
@@ -1069,6 +1072,31 @@ function renderCards(em,keys){
 }
 
 /* remove all of a month's rows: single entries are deleted, installment entries skip this month */
+async function dropFromMonth(h,k){const ref=S.db.doc("harcamalar/"+h.id),tak=h.islem==="odeme"?1:Math.max(1,h.taksit||1);const skip=(Array.isArray(h.haric)?h.haric:[]).concat(k);if(tak===1||skip.length>=tak)await ref.delete();else await ref.update({haric:skip})}
+/* edit one table cell: fixed amount + entries of that row in that month */
+function cellEdit(rid,k){
+  const r=rowOf(rid);if(!r)return;
+  const em=entryMap(),ids=mergedIds(r),card=tipOf(r)==="kart";
+  const fixed=ids.reduce((a,id)=>a+(Number(((rowOf(id)||{}).aylar||{})[k])||0),0);
+  const ents=(em[k]||[]).filter(c=>ids.includes(c.t)).sort((a,b)=>a.h.tarih<b.h.tarih?1:-1);
+  const fi=faizInfo(r,em);const faiz=fi&&fi.k===k?fi.amt:0;
+  const tot=fixed+ents.reduce((a,c)=>a+c.amt,0)+faiz;
+  const list=ents.length?'<div class="list">'+ents.map(c=>{const h=c.h,[,m,d]=h.tarih.split("-"),n=h.islem==="odeme"?1:Math.max(1,h.taksit||1);
+    return '<div class="crow"><span class="vn"><span>'+esc(h.aciklama||(h.islem==="odeme"?"Ödeme":"Harcama"))+'</span><small>'+d+"."+m+(n>1?" · "+(c.i+1)+"/"+n+" taksit":"")+(isCardT(c.t)?" · "+(h.kart==="sanal"?"Sanal":"Ana")+" kart":"")+'</small></span><b class="'+(c.amt<0?"ref":"")+'">'+sgn2(c.amt)+'</b><button type="button" class="xbtn" data-cx="'+h.id+'" aria-label="Bu ay için sil">✕</button></div>'}).join("")+"</div>":"";
+  openOv(r.ad+" · "+kLong(k),
+   '<div class="preview">Bu ayki tutar: <b>'+tl(tot)+'</b>'+(faiz?" (faiz "+tl0(faiz)+" ₺ dahil)":"")+'</div>'+
+   (card?"":'<div class="field"><label for="cFix">Sabit tutar (₺)</label><input id="cFix" type="text" inputmode="decimal" value="'+(fixed?fmt2.format(fixed):"")+'" placeholder="0,00"><small class="hint">Boş bırakırsan bu ay için sabit tutar silinir.</small></div>')+
+   (ents.length?'<div class="field"><span class="lab">Bu aya eklenen işlemler</span>'+list+'<small class="hint">✕ yalnızca bu aydaki tutarı siler; taksitli işlemlerin diğer ayları kalır.</small></div>':(card?'<p class="hint">Bu ay için bu karta eklenmiş işlem yok.</p>':""))+
+   '<div class="btns"><button type="button" class="btn" id="cAdd">+ Bu kaleme işlem ekle</button>'+((fixed||ents.length)?'<button type="button" class="clear" id="cAll">Bu ayı tamamen sil</button>':"")+'</div>',
+   async()=>{if(card)return true;const raw=$("cFix").value.trim(),v=raw?parseAmt(raw):0;if(!isFinite(v)){toast("Tutarı sayı olarak yaz");return false}
+     if(Math.abs(v-fixed)<.005)return true;
+     await savePlan(p=>{for(const x of p.satirlar)if(ids.includes(x.id)){x.aylar=x.aylar||{};delete x.aylar[k]}const me=p.satirlar.find(x=>x.id===r.id);if(v)me.aylar[k]=v});toast("Kaydedildi");return true});
+  $("ovBody").onclick=async e=>{
+    const x=e.target.closest("[data-cx]");if(x){if(!arm(x,"?"))return;x.disabled=true;const h=S.harc.find(z=>z.id===x.dataset.cx);try{if(h)await dropFromMonth(h,k);toast("Silindi");setTimeout(()=>cellEdit(rid,k),120)}catch(err){writeErr(err)}return}
+    if(e.target.closest("#cAdd")){closeOv();go("odemeler");setKind("harcama");$("fTarget").value=rid;delete $("fAy").dataset.touched;syncTarget();if(!isCardT(rid)){$("fAy").value=k;$("fAy").dataset.touched="1";updatePreview()}$("expForm").scrollIntoView({behavior:"smooth",block:"start"});return}
+    const all=e.target.closest("#cAll");if(all){if(!arm(all,"Emin misin? Tekrar dokun"))return;all.disabled=true;try{for(const c of ents)await dropFromMonth(c.h,k);if(fixed)await savePlan(p=>{for(const z of p.satirlar)if(ids.includes(z.id)&&z.aylar)delete z.aylar[k]});toast(kLong(k)+" için silindi");closeOv()}catch(err){writeErr(err)}}
+  };
+}
 async function clearMonth(k){
   const em=entryMap();
   const cs=(em[k]||[]).filter(passF);
@@ -1216,7 +1244,7 @@ $("list").onclick=async e=>{if(e.target.closest("[data-fclear]")){S.fBank="";S.f
   const c=e.target.closest("[data-clearall]");
   if(c){if(!arm(c,"Emin misin? Tekrar dokun"))return;c.disabled=true;if(S.editId)resetForm();await clearMonth(S.selMonth);return}
   const b=e.target.closest("[data-id]");if(b)quickEdit(b.dataset.id)};
-$("tblWrap").onclick=e=>{const b=e.target.closest("[data-k]");if(b){S.selMonth=b.dataset.k;go("odemeler")}};
+$("tblWrap").onclick=e=>{const b=e.target.closest("[data-k]");if(!b)return;if(b.dataset.r&&S.db){cellEdit(b.dataset.r,b.dataset.k);return}S.selMonth=b.dataset.k;go("odemeler")};
 $("cards").onclick=e=>{const b=e.target.closest("[data-k]");if(b){S.selMonth=b.dataset.k;go("odemeler")}};
 $("settingsBtn").onclick=()=>{if(S.db)openSettings()};
 $("ovCancel").onclick=closeOv;$("ov").addEventListener("click",e=>{if(e.target===$("ov"))closeOv()});
