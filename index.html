@@ -287,6 +287,48 @@ main .wrap>*,.chart-box{min-width:0}
 .crow{display:grid;grid-template-columns:minmax(0,1fr) auto 32px;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line)}
 .crow:last-child{border-bottom:0}
 .crow b{font-variant-numeric:tabular-nums}.crow b.ref{color:var(--virt)}
+.calc-bottom{max-width:560px}
+.leftcol{display:grid;gap:16px;align-content:start;min-width:0}
+.tape{display:grid;max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-variant-numeric:tabular-nums}
+.tape:empty::before{content:"Henüz satır yok";padding:14px;color:var(--muted);font-size:.86rem;text-align:center}
+.trow{display:grid;grid-template-columns:28px minmax(0,1fr) auto 30px;gap:8px;align-items:center;padding:4px 6px 4px 10px;border-bottom:1px solid var(--line);min-height:38px}
+.trow:last-child{border-bottom:0}
+.trow .sg{border:0;background:var(--surface);border-radius:8px;width:26px;height:26px;font-weight:800;font-size:1rem;padding:0}
+.trow .sg.m{color:var(--bad)}.trow .sg.p{color:var(--under)}
+.trow .tv{text-align:right;font-weight:700}
+.trow .rs{font-size:.78rem;color:var(--muted);text-align:right;min-width:7ch}
+.trow .ex{font-size:.74rem;color:var(--muted);display:block;text-align:right}
+.ctot{display:flex;justify-content:space-between;align-items:baseline;padding:4px 2px;border-top:2px solid var(--ink);font-weight:800}
+.ctot b{font-size:1.3rem;font-variant-numeric:tabular-nums}
+.cin{display:grid;grid-template-columns:minmax(0,1fr) 46px 46px;gap:8px}
+.cin input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px}
+.cbtn{border:0;border-radius:12px;font-size:1.3rem;font-weight:800;background:var(--accent);color:var(--on-accent)}
+.cbtn[data-op="-"]{background:var(--ink);color:var(--bg)}
+.drop{display:flex;align-items:center;gap:14px;border:2px dashed var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:16px 18px;cursor:pointer;color:var(--ink)}
+.drop:hover,.drop.over{filter:brightness(.97);border-style:solid}
+.drop .dplus{flex:none;width:44px;height:44px;border-radius:999px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:1.6rem;font-weight:800}
+.drop b{display:block;font-size:1.05rem}.drop small{color:var(--muted);font-size:.84rem}
+.evbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.evbar input{flex:1 1 220px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:16px}
+.evgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.evc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:grid;grid-template-rows:auto 1fr auto;min-width:0}
+.evth{height:140px;background:var(--bg);display:grid;place-items:center;border:0;padding:0;width:100%;overflow:hidden;cursor:pointer}
+.evth img{width:100%;height:100%;object-fit:cover}
+.evth .pdf{font-weight:800;font-size:1.1rem;color:var(--bad);background:var(--bad-soft);padding:10px 16px;border-radius:10px}
+.evth .ld{color:var(--muted);font-size:.8rem}
+.evi{padding:10px 14px;display:grid;gap:2px;min-width:0}
+.evi b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.evi small{color:var(--muted);font-size:.78rem}
+.evi p{margin:2px 0 0;font-size:.84rem;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.evact{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line)}
+.evact button{border:0;background:none;padding:10px 4px;font-weight:800;font-size:.84rem;color:var(--accent);min-height:42px}
+.evact button+button{border-left:1px solid var(--line)}
+.evact button:hover{background:var(--accent-soft)}
+.evact .wa{color:#1f8f4e}
+.viewer{display:grid;place-items:center;background:var(--bg);border-radius:12px;min-height:200px;overflow:hidden}
+.viewer img{max-width:100%;max-height:65vh;display:block}
+.viewer iframe{width:100%;height:65vh;border:0;background:#fff}
+.sheet.wide{width:min(760px,100%)}
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .filters select{padding:8px 10px}
 
@@ -397,6 +439,7 @@ main .wrap>*,.chart-box{min-width:0}
     <button class="tab" role="tab" id="tabPlan" aria-selected="true" type="button">12 aylık plan</button>
     <button class="tab" role="tab" id="tabExp" aria-selected="false" type="button"><span class="lg">Ödeme ya da harcama ekle / düzenle</span><span class="sm">Ekle / düzenle</span></button>
     <button class="tab" role="tab" id="tabVar" aria-selected="false" type="button">Varlıklarım</button>
+    <button class="tab" role="tab" id="tabEvr" aria-selected="false" type="button">Evrak</button>
   </div>
 </nav>
 
@@ -453,6 +496,7 @@ main .wrap>*,.chart-box{min-width:0}
 
   <section id="viewExp" class="wrap" hidden>
     <div class="exp-grid">
+      <div class="leftcol">
       <form class="panel" id="expForm" novalidate>
         <h2 id="formTitle">Yeni ödeme ya da harcama</h2>
         <div class="seg kindsw" role="group" aria-label="İşlem türü"><button type="button" id="kHar" aria-pressed="true">Harcama</button><button type="button" id="kOde" aria-pressed="false">Ödeme</button></div>
@@ -477,6 +521,7 @@ main .wrap>*,.chart-box{min-width:0}
         </div>
         <p class="hint" id="fHint"></p>
       </form>
+      </div>
       <div style="display:grid;gap:12px;min-width:0">
         <div class="sec-head"><h2 id="listTitle">Ödemeler</h2></div>
         <div class="filters"><div class="field"><label for="flBank">Banka</label><select id="flBank"></select></div><div class="field"><label for="flSrc">Kaynak</label><select id="flSrc"></select></div></div>
@@ -484,6 +529,14 @@ main .wrap>*,.chart-box{min-width:0}
         <div id="list"><div class="list"><div class="state">Ödemeler yükleniyor…</div></div></div>
       </div>
     </div>
+      <section class="panel calc calc-bottom" aria-labelledby="calcT">
+        <div class="sec-head"><h2 id="calcT">Hesap makinesi</h2><button type="button" class="bdel" id="calcClr">Temizle</button></div>
+        <div class="tape" id="tape"></div>
+        <div class="ctot"><span>Toplam</span><b id="calcTot">0,00 ₺</b></div>
+        <div class="cin"><input id="calcIn" type="text" inputmode="decimal" autocomplete="off" placeholder="Tutar ya da işlem, örn. 1.250 veya 300*3"><button type="button" class="cbtn" data-op="+" aria-label="Topla">+</button><button type="button" class="cbtn" data-op="-" aria-label="Çıkar">−</button></div>
+        <div class="btns"><button type="button" class="btn" id="calcUse">Toplamı tutara aktar</button></div>
+        <p class="hint">Rakamı yazıp + ya da − bas (Enter = +). Satıra dokunarak işaretini değiştirebilir, ✕ ile silebilirsin. Bu liste yalnızca bu cihazda saklanır.</p>
+      </section>
   </section>
 
   <section id="viewVar" class="wrap" hidden>
@@ -494,6 +547,12 @@ main .wrap>*,.chart-box{min-width:0}
     <div class="vprice" id="vPrice"></div>
     <div class="vgrid" id="varBody"><div class="vcard"><div class="state">Varlıklar yükleniyor…</div></div></div>
     <div class="vcard" id="incBox"><div class="state">Ek gelirler yükleniyor…</div></div>
+  </section>
+  <section id="viewEvr" class="wrap" hidden>
+    <div class="sec-head"><div><h2>Evrak</h2><p class="hint">Dekont, fatura, sözleşme… Resim ya da PDF yükle; adını ve notunu düzenle, açıp incele, paylaş.</p></div></div>
+    <label class="drop" id="evDrop" for="evFile"><input type="file" id="evFile" accept="image/*,application/pdf" hidden><span class="dplus">+</span><span><b>Dekont yükle</b><small>Resim ya da PDF · en fazla 10 MB</small></span></label>
+    <div class="evbar"><input type="search" id="evQ" placeholder="Evraklarda ara" autocomplete="off"><span class="hint" id="evCount"></span></div>
+    <div class="evgrid" id="evList"><div class="vcard"><div class="state">Evraklar yükleniyor…</div></div></div>
   </section>
 </main>
 
@@ -586,6 +645,13 @@ function fzMakeDb(cfg,initial){
   setInterval(()=>{if(document.visibilityState==="visible")refresh()},60000);
   return {doc,collection,_refresh:refresh,_replace:d=>{docs=d;persist();notifyAll()},_cfg:c=>{cfg=c}};
 }
+function fzPostRaw(cfg,extra){return fetch(cfg.url,{method:"POST",body:JSON.stringify(Object.assign({key:cfg.key},extra)),redirect:"follow"}).then(r=>r.json()).then(j=>{if(j.error)throw new Error(j.error);return j})}
+function fzFileApi(){const cfg=()=>{const c=fzLoad(FZ_CFG_KEY)||{};if(FZ_URL)c.url=FZ_URL;return c};
+ const b64=blob=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=rej;r.readAsDataURL(blob)});
+ return {upload:async(blob,name)=>{const j=await fzPostRaw(cfg(),{dosyaYukle:{ad:name,mime:blob.type||"application/octet-stream",data:await b64(blob)}});if(!j.id)throw new Error("Kod.gs güncel değil");return {fileId:j.id}},
+  get:async ref=>{const c=cfg();const r=await fetch(c.url+(c.url.includes("?")?"&":"?")+"key="+encodeURIComponent(c.key)+"&dosya="+encodeURIComponent(ref.fileId||""),{redirect:"follow"});const j=await r.json();if(j.error||!j.data)throw new Error(j.error||"Kod.gs güncel değil");const bin=atob(j.data),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:j.mime||""})},
+  del:async ref=>{if(ref&&ref.fileId)await fzPostRaw(cfg(),{dosyaSil:ref.fileId})},
+  save:null}}
 function fzStatus(t){let el=document.getElementById("fzStatus");if(!el){el=document.createElement("div");el.id="fzStatus";el.className="toast";document.body.appendChild(el)}el.textContent=t;el.hidden=!t}
 </script>
 <script>
@@ -599,7 +665,7 @@ const tl=v=>fmt2.format(v)+" ₺";
 const tl0=v=>fmt0.format(Math.round(v));
 const $=id=>document.getElementById(id);
 
-const S={db:null,plan:null,ayar:{maas:83000,kesimGunu:2,zamAyi:"2027-01",zamOrani:28.4,zamliMaas:0,bitisAyi:"2027-11",tazminat:0},kind:"harcama",harc:[],gun:[],vars:[],maaslar:[],gelir:[],fiyat:{},loaded:{plan:false,harc:false,gun:false,vars:false},offset:0,selMonth:null,editId:null,card:"ana"};
+const S={db:null,plan:null,ayar:{maas:83000,kesimGunu:2,zamAyi:"2027-01",zamOrani:28.4,zamliMaas:0,bitisAyi:"2027-11",tazminat:0},kind:"harcama",harc:[],gun:[],vars:[],maaslar:[],gelir:[],evrak:[],files:null,fiyat:{},loaded:{plan:false,harc:false,gun:false,vars:false},offset:0,selMonth:null,editId:null,card:"ana"};
 
 const key=(y,m)=>y+"-"+String(m+1).padStart(2,"0");
 const parseKey=k=>{const [y,m]=k.split("-").map(Number);return {y,m:m-1}};
@@ -762,7 +828,7 @@ function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt
 function windowKeys(em){const st=addM(baseStart(em),S.offset);return Array.from({length:12},(_,i)=>addM(st,i))}
 
 function render(){
-  renderVar();
+  renderVar();renderEvr();
   const em=entryMap();renderHeader(em);fillTargets();
   if(!S.loaded.plan||!S.loaded.harc)return;
   const keys=windowKeys(em);
@@ -1061,6 +1127,74 @@ function quickEdit(id){
   const del=$("qDel");del.onclick=async()=>{if(!arm(del,"Emin misin? Tekrar dokun"))return;try{await S.db.doc("harcamalar/"+h.id).delete();toast("Silindi");closeOv()}catch(e){writeErr(e)}};
 }
 
+/* documents (Evrak) */
+const evFmt=b=>b>=1048576?(b/1048576).toFixed(1).replace(".",",")+" MB":Math.max(1,Math.round(b/1024))+" KB";
+const evIsImg=d=>/^image\//.test(d.mime||"");
+const evExt=d=>{const m=/\.([a-z0-9]+)$/i.exec(d.dosyaAdi||"");return m?m[1].toLowerCase():evIsImg(d)?"jpg":"pdf"};
+const evName=d=>(d.ad||"evrak").replace(/[\\/:*?"<>|]+/g,"-")+"."+evExt(d);
+const evCache=new Map();
+async function evBlob(d){if(evCache.has(d.id))return evCache.get(d.id);if(!S.files)throw new Error("dosya deposu yok");const b=await S.files.get(d.ref||{});evCache.set(d.id,b);return b}
+async function makeFiles(){
+  if(typeof fzFileApi==="function")return fzFileApi();
+  const use=window.claude&&window.claude.use?window.claude.use:null;if(!use)return null;
+  const a=await use("assets"),dl=await use("downloads");if(!a)return null;
+  return {upload:async b=>{const r=await a.upload(b);return {assetId:r.id}},
+    get:async ref=>{const r=await fetch("/_blob/"+ref.assetId);if(!r.ok)throw new Error("indirilemedi");return await r.blob()},
+    del:async ref=>{try{await a.delete(ref.assetId)}catch(e){}},
+    save:dl?async(b,n)=>dl.save({filename:n,data:b}):null};
+}
+function renderEvr(){
+  if(curView!=="evrak")return;
+  if(!S.loaded.evrak){return}
+  const q=($("evQ").value||"").toLocaleLowerCase("tr");
+  const list=S.evrak.filter(d=>!q||(d.ad+" "+(d.not||"")+" "+(d.dosyaAdi||"")).toLocaleLowerCase("tr").includes(q));
+  $("evCount").textContent=S.evrak.length?(q?list.length+" / ":"")+S.evrak.length+" evrak":"";
+  if(!list.length){$("evList").innerHTML='<div class="vcard"><div class="state">'+(S.evrak.length?"Aramaya uyan evrak yok.":"Henüz evrak yok. Yukarıdaki “Dekont yükle” alanına dokunup ilk dekontunu ekle.")+"</div></div>";return}
+  const fd=t=>{const [y,m,d]=t.split("-").map(Number);return d+" "+AYK[m-1]+" "+y};
+  $("evList").innerHTML=list.map(d=>'<article class="evc"><button type="button" class="evth" data-evv="'+d.id+'" aria-label="'+esc(d.ad)+' evrakını aç">'+(evIsImg(d)?'<span class="ld" data-evt="'+d.id+'">Yükleniyor…</span>':'<span class="pdf">PDF</span>')+'</button><div class="evi"><b>'+esc(d.ad||"Evrak")+"</b><small>"+fd(d.tarih||iso(today))+" · "+evFmt(d.boyut||0)+"</small>"+(d.not?"<p>"+esc(d.not)+"</p>":"")+'</div><div class="evact"><button type="button" data-evv="'+d.id+'">Görüntüle</button><button type="button" class="wa" data-evs="'+d.id+'">Paylaş</button><button type="button" data-eve="'+d.id+'">Düzenle</button></div></article>').join("");
+  list.filter(evIsImg).forEach(async d=>{try{const b=await evBlob(d);const el=document.querySelector('[data-evt="'+d.id+'"]');if(el){const u=URL.createObjectURL(b);el.outerHTML='<img alt="" src="'+u+'">'}}catch(e){const el=document.querySelector('[data-evt="'+d.id+'"]');if(el)el.textContent="Önizleme yok"}});
+}
+function evForm(d,file){
+  const isNew=!d;const base=file?file.name.replace(/\.[^.]+$/,""):"";
+  d=d||{ad:base,tarih:iso(today),not:""};
+  openOv(isNew?"Evrak ekle":"Evrakı düzenle",
+   (file?'<div class="preview">'+esc(file.name)+" · "+evFmt(file.size)+'</div>':"")+
+   '<div class="field"><label for="eAd">Evrak adı</label><input id="eAd" type="text" maxlength="80" value="'+esc(d.ad||"")+'" placeholder="Örn. Kasım kira dekontu"></div>'+
+   '<div class="field"><label for="eTar">Tarih</label><input id="eTar" type="date" value="'+(d.tarih||iso(today))+'"></div>'+
+   '<div class="field"><label for="eNot">Not (isteğe bağlı)</label><input id="eNot" type="text" maxlength="200" value="'+esc(d.not||"")+'" placeholder="Örn. Garanti, 25.000 ₺ araba ödemesi"></div>'+
+   (isNew?"":'<button type="button" class="clear" id="eDel">Bu evrakı sil</button>'),
+   async()=>{
+    const ad=$("eAd").value.trim()||base||"Evrak",t=$("eTar").value||iso(today),not=$("eNot").value.trim();
+    if(isNew){
+      if(!S.files){toast("Dosya yükleme bu görünümde kullanılamıyor");return false}
+      const btn=$("ovForm").querySelector('button[type="submit"]');btn.disabled=true;btn.textContent="Yükleniyor…";
+      try{const ref=await S.files.upload(file,file.name);await S.db.collection("evrak").add({ad,tarih:t,not,mime:file.type||"",boyut:file.size,dosyaAdi:file.name,ref,eklendi:new Date().toISOString()});toast("Evrak yüklendi")}
+      catch(e){btn.disabled=false;btn.textContent="Kaydet";toast(String(e&&e.message||"").includes("Kod.gs")?"Önce Apps Script'teki Kod.gs'i güncellemen gerekiyor.":"Yüklenemedi, bağlantıyı kontrol edip tekrar dene.");return false}
+      return true}
+    const body=Object.assign({},d);delete body.id;body.ad=ad;body.tarih=t;body.not=not;
+    await S.db.doc("evrak/"+d.id).set(body);toast("Kaydedildi");return true});
+  const del=$("eDel");if(del)del.onclick=async()=>{if(!arm(del,"Emin misin? Tekrar dokun"))return;del.disabled=true;try{if(S.files)await S.files.del(d.ref||{});await S.db.doc("evrak/"+d.id).delete();evCache.delete(d.id);toast("Evrak silindi");closeOv()}catch(e){writeErr(e)}};
+  if(isNew)$("eAd").select();
+}
+async function evView(d){
+  openOv(d.ad||"Evrak",'<div class="viewer" id="evBox"><span class="hint">Açılıyor…</span></div><div class="btns"><button type="button" class="btn" id="evSh">Paylaş</button><a class="btn" id="evNew" target="_blank" rel="noopener" hidden>Yeni sekmede aç</a></div>',async()=>true);
+  $("ovForm").classList.add("wide");$("ovForm").querySelector('button[type="submit"]').hidden=true;$("ovCancel").textContent="Kapat";
+  const restore=()=>{$("ovForm").classList.remove("wide");$("ovForm").querySelector('button[type="submit"]').hidden=false;$("ovCancel").textContent="Vazgeç"};
+  const oc=$("ovCancel").onclick;$("ovCancel").onclick=()=>{restore();closeOv()};
+  $("evSh").onclick=()=>evShare(d);
+  try{const b=await evBlob(d),u=URL.createObjectURL(b);
+    $("evBox").innerHTML=evIsImg(d)?'<img alt="'+esc(d.ad)+'" src="'+u+'">':'<iframe title="'+esc(d.ad)+'" src="'+u+'"></iframe>';
+    const a=$("evNew");a.href=u;a.hidden=false}
+  catch(e){$("evBox").innerHTML='<span class="hint">Dosya açılamadı. Bağlantını kontrol et.</span>'}
+}
+async function evShare(d){
+  let b;try{b=await evBlob(d)}catch(e){toast("Dosya alınamadı");return}
+  const f=new File([b],evName(d),{type:b.type||d.mime||""});
+  if(navigator.canShare&&navigator.share&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:d.ad});return}catch(e){if(e&&e.name==="AbortError")return}}
+  if(S.files&&S.files.save){try{await S.files.save(b,evName(d));toast("Dosya kaydedildi; WhatsApp'ta ekleyerek gönderebilirsin")}catch(e){}return}
+  try{const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=evName(d);document.body.appendChild(a);a.click();a.remove();toast("Dosya indirildi; WhatsApp'ta ekleyerek gönderebilirsin")}catch(e){toast("Bu tarayıcı paylaşmayı desteklemiyor")}
+}
+
 /* phone month cards */
 function renderCards(em,keys){
   const rows=fixedRows();
@@ -1208,14 +1342,28 @@ function writeErr(e){toast(e&&e.code==="invalid_argument"?"Kaydedilemedi: bu gö
 
 let ovSave=null;
 function openOv(title,body,onSave){$("ovTitle").textContent=title;$("ovBody").innerHTML=body;ovSave=onSave;$("ov").hidden=false;const f=$("ovBody").querySelector("input");if(f)f.focus()}
-function closeOv(){$("ov").hidden=true;ovSave=null;$("ovBody").onclick=null;$("ovCancel").onclick=closeOv}
+function closeOv(){$("ov").hidden=true;ovSave=null;$("ovBody").onclick=null;$("ovCancel").onclick=closeOv;$("ovForm").classList.remove("wide");const sb=$("ovForm").querySelector('button[type="submit"]');sb.hidden=false;sb.disabled=false;sb.textContent="Kaydet";$("ovCancel").textContent="Vazgeç"}
 
 let curView="plan";
-function show(view){curView=view;if(view==="odemeler")S._msc=null;document.body.dataset.view=view;const v={plan:"viewPlan",odemeler:"viewExp",varliklar:"viewVar"},t={plan:"tabPlan",odemeler:"tabExp",varliklar:"tabVar"};for(const k in v){$(v[k]).hidden=k!==view;$(t[k]).setAttribute("aria-selected",k===view)}render()}
+function show(view){curView=view;if(view==="odemeler")S._msc=null;document.body.dataset.view=view;const v={plan:"viewPlan",odemeler:"viewExp",varliklar:"viewVar",evrak:"viewEvr"},t={plan:"tabPlan",odemeler:"tabExp",varliklar:"tabVar",evrak:"tabEvr"};for(const k in v){$(v[k]).hidden=k!==view;$(t[k]).setAttribute("aria-selected",k===view)}render()}
 function go(view){try{history.replaceState(null,"","#"+view)}catch(e){}show(view);window.scrollTo({top:0})}
 
 for(let i=1;i<=12;i++){const o=document.createElement("option");o.value=i;o.textContent=i===1?"Tek seferde":i+" taksit";$("fInst").appendChild(o)}
 $("tabPlan").onclick=()=>go("plan");
+{const CK="finanzee.hesap";let tape=[];try{tape=JSON.parse(localStorage.getItem(CK)||"[]")}catch(e){}
+ const save=()=>{try{localStorage.setItem(CK,JSON.stringify(tape))}catch(e){}};
+ const evalIn=raw=>{let s=String(raw||"").replace(/₺|\s/g,"").replace(/×/g,"*").replace(/÷/g,"/").replace(/−/g,"-");if(!s)return NaN;if(!/^[\d.,+\-*/()]+$/.test(s))return NaN;
+   const js=s.replace(/[\d.,]+/g,t=>{const v=parseAmt(t);return isFinite(v)?"("+v+")":"NaN"});try{const v=Function('"use strict";return ('+js+')')();return typeof v==="number"&&isFinite(v)?Math.round(v*100)/100:NaN}catch(e){return NaN}};
+ const draw=()=>{let run=0;$("tape").innerHTML=tape.map((t,i)=>{run+=t.s*t.v;return '<div class="trow"><button type="button" class="sg '+(t.s<0?"m":"p")+'" data-sg="'+i+'" aria-label="İşareti değiştir">'+(t.s<0?"−":"+")+'</button><span class="tv">'+fmt2.format(t.v)+(t.x?'<span class="ex">'+esc(t.x)+'</span>':"")+'</span><span class="rs">'+fmt2.format(run)+'</span><button type="button" class="xbtn" data-tx="'+i+'" aria-label="Satırı sil">✕</button></div>'}).join("");
+   $("calcTot").textContent=fmt2.format(run)+" ₺";$("calcTot").style.color=run<0?"var(--bad)":"";const tp=$("tape");tp.scrollTop=tp.scrollHeight};
+ const add=op=>{const raw=$("calcIn").value.trim();if(!raw)return;let sgn=op==="-"?-1:1;let r=raw;if(/^[-−]/.test(r)&&op!=="-"){sgn=-1;r=r.replace(/^[-−]/,"")}const v=evalIn(r);if(!isFinite(v)){toast("Sayı ya da basit işlem yaz, örn. 1.250 veya 300*3");return}
+   tape.push({s:v<0?-sgn:sgn,v:Math.abs(v),x:/[*/()+\-]/.test(r.replace(/^[\d.,]+$/,""))?r:""});save();draw();$("calcIn").value="";$("calcIn").focus()};
+ document.querySelectorAll(".cbtn").forEach(b=>b.onclick=()=>add(b.dataset.op));
+ $("calcIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();add("+")}});
+ $("tape").onclick=e=>{const g=e.target.closest("[data-sg]");if(g){tape[+g.dataset.sg].s*=-1;save();draw();return}const x=e.target.closest("[data-tx]");if(x){tape.splice(+x.dataset.tx,1);save();draw()}};
+ $("calcClr").onclick=()=>{if(!tape.length)return;if(!arm($("calcClr"),"Emin misin?"))return;tape=[];save();draw()};
+ $("calcUse").onclick=()=>{const t=tape.reduce((a,x)=>a+x.s*x.v,0);if(!tape.length){toast("Önce birkaç rakam ekle");return}$("fAmt").value=fmt2.format(Math.abs(t));updatePreview();$("expForm").scrollIntoView({behavior:"smooth",block:"start"});toast("Toplam tutar alanına aktarıldı")};
+ draw();}
 {const KEY="finanzee.gizli";let hid=[];try{hid=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){}
  const apply=()=>document.querySelectorAll("[data-mask]").forEach(el=>{const on=hid.includes(el.dataset.mask);el.classList.toggle("masked",on);const b=el.querySelector(".eye");if(b){b.setAttribute("aria-pressed",on);b.setAttribute("aria-label",on?"Tutarı göster":"Tutarı gizle")}});
  document.querySelector(".kpis").addEventListener("click",e=>{const b=e.target.closest("[data-eye]");if(!b)return;e.stopPropagation();const k=b.dataset.eye;hid=hid.includes(k)?hid.filter(x=>x!==k):hid.concat(k);try{localStorage.setItem(KEY,JSON.stringify(hid))}catch(err){}apply()});
@@ -1238,7 +1386,11 @@ $("bankAdd").onclick=()=>{if(S.db)addBank()};
 $("banks").onclick=async e=>{if(!S.db)return;
   const d=e.target.closest("[data-bdel]");if(d){if(!arm(d,"Emin misin?"))return;d.disabled=true;const b=d.dataset.bdel;try{await deleteRows(fixedRows().filter(r=>r.banka===b).map(r=>r.id),b);toast(b+" silindi")}catch(err){writeErr(err)}return}
   const a=e.target.closest("[data-badd]");if(a){editRow(null,a.dataset.badd);return}
-  const r=e.target.closest("[data-row]");if(r)editRow(rowOf(r.dataset.row))};$("tabVar").onclick=()=>go("varliklar");
+  const r=e.target.closest("[data-row]");if(r)editRow(rowOf(r.dataset.row))};$("tabVar").onclick=()=>go("varliklar");$("tabEvr").onclick=()=>go("evrak");
+$("evFile").onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.value="";if(!f)return;if(!/^image\/|application\/pdf/.test(f.type)){toast("Yalnızca resim ya da PDF yükleyebilirsin");return}if(f.size>10*1048576){toast("Dosya 10 MB'tan büyük");return}if(!S.db){toast("Veriler bağlı değil");return}evForm(null,f)};
+{const dz=$("evDrop");["dragenter","dragover"].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.add("over")}));["dragleave","drop"].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.remove("over")}));dz.addEventListener("drop",e=>{const f=e.dataTransfer&&e.dataTransfer.files[0];if(f){const dt=new DataTransfer();dt.items.add(f);$("evFile").files=dt.files;$("evFile").dispatchEvent(new Event("change"))}})}
+$("evQ").addEventListener("input",renderEvr);
+$("evList").onclick=e=>{const v=e.target.closest("[data-evv]");if(v){evView(S.evrak.find(d=>d.id===v.dataset.evv));return}const s=e.target.closest("[data-evs]");if(s){evShare(S.evrak.find(d=>d.id===s.dataset.evs));return}const ed=e.target.closest("[data-eve]");if(ed)evForm(S.evrak.find(d=>d.id===ed.dataset.eve))};
 $("viewVar").onclick=e=>{if(!S.db)return;const ia=e.target.closest("[data-incadd]");if(ia){editIncome(null);return}const ir=e.target.closest("[data-inc]");if(ir){editIncome(S.gelir.find(x=>x.id===ir.dataset.inc));return}if(e.target.closest("#vPriceBtn")){editPrice();return}const r=e.target.closest("[data-vid]");if(r){editVar(S.vars.find(a=>a.id===r.dataset.vid));return}const ad=e.target.closest("[data-vadd]");if(ad)editVar(null,ad.dataset.vadd,ad.dataset.kind)};$("tabExp").onclick=()=>go("odemeler");
 $("prevM").onclick=()=>{S.offset--;render()};$("nextM").onclick=()=>{S.offset++;render()};
 $("cAna").onclick=()=>setCard("ana");$("cSanal").onclick=()=>setCard("sanal");
@@ -1281,7 +1433,7 @@ $("fDel").onclick=async()=>{
 };
 let rT;window.addEventListener("resize",()=>{clearTimeout(rT);rT=setTimeout(render,150)});
 
-fillTargets();resetForm();show(location.hash==="#odemeler"||location.hash==="#harcamalar"?"odemeler":location.hash==="#varliklar"?"varliklar":"plan");render();
+fillTargets();resetForm();show(location.hash==="#odemeler"||location.hash==="#harcamalar"?"odemeler":location.hash==="#varliklar"?"varliklar":location.hash==="#evrak"?"evrak":"plan");render();
 (async()=>{
   const db=await fzConnect();
   if(!db){$("tblWrap").innerHTML='<div class="state">Plan verileri bu görünümde açılamadı. Sayfayı claude.ai üzerinden, oturum açıkken aç.</div>';$("list").innerHTML='<div class="list"><div class="state">Ödemeler bu görünümde açılamadı.</div></div>';$("cards").innerHTML='<div class="mcard"><div class="state">Plan verileri bu görünümde açılamadı.</div></div>';return}
@@ -1290,6 +1442,8 @@ fillTargets();resetForm();show(location.hash==="#odemeler"||location.hash==="#ha
   db.doc("plan/odemeler").onSnapshot(s=>{S.plan=s.exists?s.data():{satirlar:[]};S.loaded.plan=true;render()},()=>{S.loaded.plan=true;render()});
   db.collection("varliklar").onSnapshot(q=>{S.vars=q.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(a.sira||99)-(b.sira||99)||(a.ad||"").localeCompare(b.ad||"","tr"));S.loaded.vars=true;renderVar()},()=>{S.loaded.vars=true;renderVar()});
   db.doc("fiyatlar/altin").onSnapshot(s=>{S.fiyat=s.exists?s.data():{};renderVar()},()=>{});
+  db.collection("evrak").onSnapshot(q=>{S.evrak=q.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.tarih||"")<(a.tarih||"")?-1:(b.tarih||"")>(a.tarih||"")?1:((b.eklendi||"")<(a.eklendi||"")?-1:1));S.loaded.evrak=true;renderEvr()},()=>{S.loaded.evrak=true;renderEvr()});
+  makeFiles().then(f=>{S.files=f}).catch(()=>{});
   db.collection("ekgelir").onSnapshot(q=>{S.gelir=q.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>a.tarih<b.tarih?1:-1);S.loaded.gelir=true;renderVar()},()=>{S.loaded.gelir=true;renderVar()});
   db.collection("maaslar").onSnapshot(q=>{S.maaslar=q.docs.map(d=>Object.assign({id:d.id},d.data()));render()},()=>{});
   db.collection("gunluk").onSnapshot(q=>{S.gun=q.docs.map(d=>({id:d.id,borc:Number(d.data().borc)||0})).sort((a,b)=>a.id<b.id?-1:1);S.loaded.gun=true;render()},()=>{S.loaded.gun=true;render()});
