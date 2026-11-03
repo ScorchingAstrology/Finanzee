@@ -1139,10 +1139,13 @@ function dayHead(t,v,n){const [y,m,d]=t.split("-").map(Number);const dt=new Date
 const sgn2=v=>Math.abs(v)<.005?tl(0):(v>0?"−":"+")+tl(Math.abs(v));
 const sgn0=v=>Math.abs(v)<.5?"0":(v>0?"−":"+")+tl0(Math.abs(v));
 function renderList(em,keys){
-  if(!S.selMonth)S.selMonth=keys[0];
-  const months=keys.includes(S.selMonth)?keys:[S.selMonth,...keys.slice(0,11)].sort();
+  const mc=fixedRows().find(r=>tipOf(r)==="kart"),stK=firstKey(iso(today),mc?mc.id:"kart");
+  if(!S.selMonth)S.selMonth=stK;
+  let months=[addM(stK,-1)];for(let i=0;i<12;i++)months.push(addM(stK,i));
+  if(!months.includes(S.selMonth))months=[S.selMonth,...months].sort();
   $("months").innerHTML=months.map(k=>{const t=(em[k]||[]).filter(passF).reduce((s,c)=>s+c.amt,0);const {y,m}=parseKey(k);return '<button type="button" class="mchip" data-m="'+k+'" aria-pressed="'+(k===S.selMonth)+'"><span>'+AYK[m]+" "+y+"</span><b>"+sgn0(t)+" ₺</b></button>"}).join("");
   $("listTitle").textContent=kLong(S.selMonth)+" işlemleri";
+  if(S._msc!==S.selMonth){S._msc=S.selMonth;requestAnimationFrame(()=>{const box=$("months"),ch=box.querySelector('[aria-pressed="true"]');if(ch)box.scrollLeft=Math.max(0,ch.offsetLeft-box.offsetLeft-4)})}
   const allM=em[S.selMonth]||[];fillFilters(allM);
   const fOn=!!(S.fBank||S.fSrc);
   const items=allM.filter(passF).sort((a,b)=>a.h.tarih<b.h.tarih?1:a.h.tarih>b.h.tarih?-1:(a.h.id<b.h.id?1:-1));
@@ -1208,7 +1211,7 @@ function openOv(title,body,onSave){$("ovTitle").textContent=title;$("ovBody").in
 function closeOv(){$("ov").hidden=true;ovSave=null;$("ovBody").onclick=null;$("ovCancel").onclick=closeOv}
 
 let curView="plan";
-function show(view){curView=view;document.body.dataset.view=view;const v={plan:"viewPlan",odemeler:"viewExp",varliklar:"viewVar"},t={plan:"tabPlan",odemeler:"tabExp",varliklar:"tabVar"};for(const k in v){$(v[k]).hidden=k!==view;$(t[k]).setAttribute("aria-selected",k===view)}render()}
+function show(view){curView=view;if(view==="odemeler")S._msc=null;document.body.dataset.view=view;const v={plan:"viewPlan",odemeler:"viewExp",varliklar:"viewVar"},t={plan:"tabPlan",odemeler:"tabExp",varliklar:"tabVar"};for(const k in v){$(v[k]).hidden=k!==view;$(t[k]).setAttribute("aria-selected",k===view)}render()}
 function go(view){try{history.replaceState(null,"","#"+view)}catch(e){}show(view);window.scrollTo({top:0})}
 
 for(let i=1;i<=12;i++){const o=document.createElement("option");o.value=i;o.textContent=i===1?"Tek seferde":i+" taksit";$("fInst").appendChild(o)}
