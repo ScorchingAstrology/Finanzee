@@ -158,7 +158,7 @@ td.sum{font-weight:800;border-left:1px solid var(--line)}
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:3px}
 .seg button{background:transparent;border:0;padding:7px;font-size:.88rem;font-weight:700;border-radius:9px;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
-#cSanal[aria-pressed="true"]{background:var(--virt);color:var(--on-virt)}
+#cSanal[aria-pressed="true"],#qSanal[aria-pressed="true"]{background:var(--virt);color:var(--on-virt)}
 .preview{font-size:.86rem;background:var(--accent-soft);border-radius:12px;padding:9px 12px}
 .btns{display:flex;gap:8px;flex-wrap:wrap}
 .btn{border-radius:999px;padding:9px 16px;font-weight:800;border:1px solid var(--line);background:var(--surface)}
@@ -1034,7 +1034,9 @@ function quickEdit(id){
   const chips=()=>tagList().map(t=>'<button type="button" class="copt" data-t="'+esc(t)+'" aria-pressed="'+(t===tag)+'">'+esc(t)+"</button>").join("")+'<button type="button" class="copt" data-t="__new" aria-pressed="false">+ Yeni tür</button>';
   const n=Math.max(1,h.taksit||1);
   openOv("Kaydı düzenle",
-   '<div class="preview">'+(h.islem==="odeme"?"Ödeme · ":"")+esc(tgtName(tgt(h)))+(isCardT(tgt(h))?" · "+(h.kart==="sanal"?"Sanal kart":"Ana kart"):"")+(n>1?" · "+n+" taksit":"")+'</div>'+
+   (h.islem==="odeme"||n>1?'<div class="preview">'+(h.islem==="odeme"?"Ödeme":"")+(h.islem==="odeme"&&n>1?" · ":"")+(n>1?n+" taksit":"")+'</div>':"")+
+   '<div class="field"><label for="qTgt">Kaynak</label><select id="qTgt">'+visRows().map(r=>'<option value="'+esc(r.id)+'"'+(r.id===tgt(h)?" selected":"")+'>'+esc(r.ad+(r.banka?" · "+r.banka:""))+'</option>').join("")+'</select></div>'+
+   '<div class="field" id="qCardF"><span class="lab">Kart</span><div class="seg" role="group"><button type="button" id="qAna" aria-pressed="'+(h.kart!=="sanal")+'">Ana kart</button><button type="button" id="qSanal" aria-pressed="'+(h.kart==="sanal")+'">Sanal kart</button></div></div>'+
    '<div class="field"><label for="qDesc">Açıklama</label><input id="qDesc" type="text" maxlength="80" value="'+esc(h.aciklama||"")+'"></div>'+
    '<div class="field"'+(h.islem==="odeme"?" hidden":"")+'><span class="lab">Harcama türü</span><div class="chips" id="qChips">'+chips()+'</div></div>'+
    '<div class="field" id="qNewF" hidden><label for="qNew">Yeni tür adı</label><input id="qNew" type="text" maxlength="30" placeholder="Örn. Evcil hayvan"></div>'+
@@ -1045,12 +1047,17 @@ function quickEdit(id){
     if(!d){toast("Tarihi seç");return false}if(!isFinite(a)||a===0){toast("Tutarı sayı olarak yaz, örn. 1.250,00");return false}
     let t=tag;if(t==="__new"){t=$("qNew").value.trim();if(!t){toast("Yeni türün adını yaz");return false}if(!tagList().includes(t)){try{await S.db.doc("ayarlar/genel").update({etiketler:customTags().concat(t)})}catch(e){}}}
     const body=Object.assign({},h);delete body.id;
+    const nt=$("qTgt").value||tgt(h);body.hedef=nt;
+    if(isCardT(nt)&&h.islem!=="odeme"){body.kart=qk;delete body.ay}else{delete body.kart;if(h.islem!=="odeme"&&(nt!==tgt(h)||!body.ay))body.ay=defAy(d,nt)}
     body.aciklama=$("qDesc").value.trim();body.etiket=t||"";body.tarih=d;body.tutar=Math.round((h.islem==="odeme"?Math.abs(a):a)*100)/100;
     await S.db.doc("harcamalar/"+h.id).set(body);toast("Kaydedildi");return true});
   $("qChips").onclick=e=>{const c=e.target.closest("[data-t]");if(!c)return;tag=c.dataset.t===tag?"":c.dataset.t;
     $("qChips").querySelectorAll("[data-t]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===tag));
     $("qNewF").hidden=tag!=="__new";if(tag==="__new")$("qNew").focus()};
   $("qMore").onclick=()=>{closeOv();loadForm(h.id);render()};
+  let qk=h.kart==="sanal"?"sanal":"ana";
+  const qsync=()=>{$("qCardF").hidden=!(isCardT($("qTgt").value)&&h.islem!=="odeme");$("qAna").setAttribute("aria-pressed",qk==="ana");$("qSanal").setAttribute("aria-pressed",qk==="sanal")};
+  $("qTgt").onchange=qsync;$("qAna").onclick=()=>{qk="ana";qsync()};$("qSanal").onclick=()=>{qk="sanal";qsync()};qsync();
   const del=$("qDel");del.onclick=async()=>{if(!arm(del,"Emin misin? Tekrar dokun"))return;try{await S.db.doc("harcamalar/"+h.id).delete();toast("Silindi");closeOv()}catch(e){writeErr(e)}};
 }
 
