@@ -1106,6 +1106,7 @@ function quickEdit(id){
    '<div class="field"><label for="qDesc">Açıklama</label><input id="qDesc" type="text" maxlength="80" value="'+esc(h.aciklama||"")+'"></div>'+
    '<div class="field"'+(h.islem==="odeme"?" hidden":"")+'><span class="lab">Harcama türü</span><div class="chips" id="qChips">'+chips()+'</div></div>'+
    '<div class="field" id="qNewF" hidden><label for="qNew">Yeni tür adı</label><input id="qNew" type="text" maxlength="30" placeholder="Örn. Evcil hayvan"></div>'+
+   (h.islem==="odeme"?"":'<div class="field"><label for="qInst">Taksit sayısı</label><select id="qInst">'+Array.from({length:36},(_,i)=>i+1).map(i=>'<option value="'+i+'"'+(i===n?" selected":"")+'>'+(i===1?"Tek seferde":i+" taksit")+'</option>').join("")+'</select><small class="hint" id="qInstH"></small></div>')+
    '<div class="row2"><div class="field"><label for="qDate">Tarih</label><input id="qDate" type="date" value="'+h.tarih+'"></div><div class="field"><label for="qAmt">'+(h.islem==="odeme"?"Ödeme tutarı (₺)":n>1?"Toplam tutar (₺)":"Tutar (₺)")+'</label><input id="qAmt" type="text" inputmode="decimal" value="'+fmt2.format(h.tutar)+'"></div></div>'+
    '<div class="btns"><button type="button" class="btn" id="qMore">Diğer ayarlar</button><button type="button" class="clear" id="qDel">Sil</button></div>',
    async()=>{
@@ -1115,13 +1116,15 @@ function quickEdit(id){
     const body=Object.assign({},h);delete body.id;
     const nt=$("qTgt").value||tgt(h);body.hedef=nt;
     if(isCardT(nt)&&h.islem!=="odeme"){body.kart=qk;delete body.ay}else{delete body.kart;if(h.islem!=="odeme"&&(nt!==tgt(h)||!body.ay))body.ay=defAy(d,nt)}
-    body.aciklama=$("qDesc").value.trim();body.etiket=t||"";body.tarih=d;body.tutar=Math.round((h.islem==="odeme"?Math.abs(a):a)*100)/100;
+    body.aciklama=$("qDesc").value.trim();body.etiket=t||"";body.tarih=d;
+    if(h.islem!=="odeme"){const ni=Number($("qInst").value)||1;if(ni!==n){body.taksit=ni;delete body.haric}}body.tutar=Math.round((h.islem==="odeme"?Math.abs(a):a)*100)/100;
     await S.db.doc("harcamalar/"+h.id).set(body);toast("Kaydedildi");return true});
   $("qChips").onclick=e=>{const c=e.target.closest("[data-t]");if(!c)return;tag=c.dataset.t===tag?"":c.dataset.t;
     $("qChips").querySelectorAll("[data-t]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===tag));
     $("qNewF").hidden=tag!=="__new";if(tag==="__new")$("qNew").focus()};
   $("qMore").onclick=()=>{closeOv();loadForm(h.id);render()};
   let qk=h.kart==="sanal"?"sanal":"ana";
+  if($("qInst")){const ih=()=>{const ni=Number($("qInst").value)||1,a=parseAmt($("qAmt").value);$("qInstH").textContent=isFinite(a)?(ni>1?ni+" × "+tl(Math.abs(a)/ni)+" (toplam tutar taksitlere bölünür)":"Tamamı tek ayda"):""};$("qInst").onchange=ih;$("qAmt").addEventListener("input",ih);ih()}
   const qsync=()=>{$("qCardF").hidden=!(isCardT($("qTgt").value)&&h.islem!=="odeme");$("qAna").setAttribute("aria-pressed",qk==="ana");$("qSanal").setAttribute("aria-pressed",qk==="sanal")};
   $("qTgt").onchange=qsync;$("qAna").onclick=()=>{qk="ana";qsync()};$("qSanal").onclick=()=>{qk="sanal";qsync()};qsync();
   const del=$("qDel");del.onclick=async()=>{if(!arm(del,"Emin misin? Tekrar dokun"))return;try{await S.db.doc("harcamalar/"+h.id).delete();toast("Silindi");closeOv()}catch(e){writeErr(e)}};
